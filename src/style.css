@@ -1,29 +1,48 @@
-* { box-sizing: border-box; }
-html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-body { background: #111820; color: #f1f4f5; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-canvas { display: block; width: 100%; height: 100%; }
-.topbar { position: fixed; z-index: 2; top: 0; left: 0; right: 0; height: 76px; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(180deg, rgba(12,18,23,.82), transparent); pointer-events: none; }
-.brand { display: flex; align-items: center; gap: 12px; letter-spacing: .08em; }
-.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #d3b77b; color: #e5c98d; font-family: Georgia, serif; font-size: 25px; border-radius: 50%; }
-.brand strong { display: block; font-size: 13px; }
-.brand small { display: block; margin-top: 4px; color: #c0c9cd; font-size: 10px; letter-spacing: .12em; }
-.status { display: flex; align-items: center; gap: 8px; color: #d9e2e4; font-size: 10px; letter-spacing: .16em; }
-.dot { width: 7px; height: 7px; background: #d5b56f; border-radius: 50%; box-shadow: 0 0 12px #d5b56f; }
-.hud { position: fixed; z-index: 2; left: 26px; bottom: 74px; display: flex; align-items: end; gap: 10px; pointer-events: none; }
-.speed-card, .gear-card { min-width: 120px; padding: 13px 16px; background: rgba(12,18,23,.72); border: 1px solid rgba(230,235,235,.18); backdrop-filter: blur(12px); }
-.speed-card span, .gear-card span { display: block; color: #b8c2c5; font-size: 9px; letter-spacing: .16em; }
-.speed-card strong { display: inline-block; margin-top: 3px; font-size: 42px; font-weight: 500; line-height: 1; }
-.speed-card small { margin-left: 5px; color: #c6d0d1; font-size: 9px; }
-.gear-card { min-width: 78px; }
-.gear-card strong { display: block; margin-top: 5px; font-size: 29px; font-weight: 500; }
-.help { position: fixed; z-index: 2; bottom: 0; left: 0; right: 0; padding: 17px 20px; text-align: center; color: #e2e8e8; background: linear-gradient(0deg, rgba(12,18,23,.78), transparent); font-size: 11px; letter-spacing: .03em; pointer-events: none; }
-.help i { display: inline-block; width: 4px; height: 4px; margin: 0 12px 2px; border-radius: 50%; background: #d5b56f; }
-#loading { position: fixed; z-index: 5; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; }
-@media (max-width: 600px) {
-  .topbar { padding: 0 15px; }
-  .status { font-size: 8px; }
-  .hud { left: 14px; bottom: 72px; }
-  .speed-card { min-width: 105px; }
-  .help { font-size: 9px; padding: 13px 8px; }
-  .help i { margin: 0 5px 2px; }
-}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root{font-family:Manrope,system-ui,sans-serif;color:#f3f0e8;background:#111820;font-synthesis:none;text-rendering:optimizeLegibility}
+*{box-sizing:border-box}
+html,body,#app{width:100%;height:100%;margin:0;overflow:hidden}
+body{background:#111820}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.topbar{position:fixed;z-index:3;inset:0 0 auto;height:82px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(9,15,20,.82),transparent);pointer-events:none}
+.brand{display:flex;align-items:center;gap:13px;letter-spacing:.09em}
+.brand-mark{width:42px;height:42px;display:grid;place-items:center;border:1px solid #d8c7a0;color:#ead9b1;border-radius:50%;font:29px Georgia,serif}
+.brand strong{display:block;font-size:13px;font-weight:800}
+.brand small{display:block;margin-top:4px;color:#c7c4bb;font:9px 'IBM Plex Mono',monospace;letter-spacing:.16em}
+.top-actions{display:flex;align-items:center;gap:14px;pointer-events:auto}
+.live{font:10px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#e7dfce}
+.live i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#a8bd8c;box-shadow:0 0 12px #a8bd8c;margin-right:7px}
+.glass-button{padding:10px 13px;color:#f2eee4;background:rgba(15,22,27,.58);border:1px solid rgba(239,231,212,.24);font:10px 'IBM Plex Mono',monospace;letter-spacing:.1em;backdrop-filter:blur(10px);border-radius:3px}
+.glass-button b{margin-left:8px;color:#d6c59e}
+.vehicle-info{position:fixed;z-index:2;top:112px;left:32px;display:flex;flex-direction:column;gap:5px;pointer-events:none;text-shadow:0 2px 12px #1a252b}
+.vehicle-info span,.vehicle-info small{font:9px 'IBM Plex Mono',monospace;letter-spacing:.15em;color:#e1e2dc}
+.vehicle-info strong{font:700 42px Georgia,serif;letter-spacing:.04em;color:#f1e8d2}
+.hud{position:fixed;z-index:2;left:28px;bottom:78px;display:flex;align-items:stretch;gap:8px;pointer-events:none}
+.speed-panel,.gear-panel,.rpm-panel{min-width:142px;padding:13px 16px;background:rgba(10,16,20,.72);border:1px solid rgba(235,231,216,.2);backdrop-filter:blur(14px);box-shadow:0 8px 30px #10182033}
+.label{display:block;color:#c1c4be;font:9px 'IBM Plex Mono',monospace;letter-spacing:.13em}
+.speed-panel>div:nth-child(2){display:flex;align-items:baseline;gap:7px;margin-top:4px}
+.speed-panel strong{font:500 43px 'IBM Plex Mono',monospace;line-height:1;color:#fff}
+.speed-panel small,.rpm-value small{font:9px 'IBM Plex Mono',monospace;color:#d1d0c7}
+.speed-track,.rpm-track{height:3px;margin-top:10px;background:#626a673d;overflow:hidden}
+.speed-track i,.rpm-track i{display:block;width:0;height:100%;background:#d6c49b;transition:width .08s linear}
+.gear-panel{min-width:84px;text-align:center}
+.gear-panel strong{display:block;margin-top:1px;font:36px 'IBM Plex Mono',monospace;color:#f0e5c9}
+.gear-panel small{display:block;margin-top:0;color:#c1c4be;font:8px 'IBM Plex Mono',monospace}
+.rpm-panel{min-width:164px}
+.rpm-value{display:flex;align-items:baseline;gap:6px;margin-top:9px}
+.rpm-value strong{font:500 23px 'IBM Plex Mono',monospace}
+.help{position:fixed;z-index:2;bottom:0;left:0;right:0;padding:17px 15px;text-align:center;color:#e1e2dc;background:linear-gradient(0deg,rgba(9,15,20,.8),transparent);font:9px 'IBM Plex Mono',monospace;letter-spacing:.07em;pointer-events:none}
+.help i{display:inline-block;width:3px;height:3px;margin:0 12px 2px;border-radius:50%;background:#d7c59d}
+kbd{display:inline-block;min-width:19px;margin:0 2px;padding:3px 5px;border:1px solid #d8d3c266;border-radius:3px;color:#f0e6ce;font:9px 'IBM Plex Mono',monospace}
+#loading{position:fixed;z-index:10;inset:0;display:flex;align-items:center;justify-content:center;gap:12px;background:#111820;color:#e9e1ce;font:11px 'IBM Plex Mono',monospace;letter-spacing:.16em;transition:opacity .5s}
+#loading span{width:8px;height:8px;border-radius:50%;background:#d7c59d;box-shadow:0 0 15px #d7c59d;animation:pulse .8s infinite alternate}
+#loading.hidden{opacity:0;pointer-events:none}
+@keyframes pulse{to{opacity:.25;transform:scale(.7)}}
+#toast{position:fixed;z-index:4;top:88px;left:50%;transform:translate(-50%,-8px);padding:9px 14px;background:#111c;color:#eee5d2;border:1px solid #eee3c333;font:10px 'IBM Plex Mono',monospace;opacity:0;transition:.2s;pointer-events:none}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.touch-controls{display:none;position:fixed;z-index:3;left:14px;right:14px;bottom:88px;justify-content:space-between;pointer-events:none}
+.touch-controls button{pointer-events:auto;width:58px;height:54px;border:1px solid #eee4c455;border-radius:8px;background:#101820bb;color:#f4ead4;font:700 13px Manrope;backdrop-filter:blur(8px);touch-action:none}
+.touch-steer,.touch-pedals{display:flex;gap:8px;align-items:end}
+.touch-controls .gas{background:#66784eaa}.touch-controls .brake{background:#8d5149aa}
+@media(max-width:700px){.topbar{height:66px;padding:0 15px}.brand-mark{width:35px;height:35px;font-size:23px}.brand strong{font-size:11px}.brand small{font-size:8px}.live{display:none}.vehicle-info{top:82px;left:17px}.vehicle-info strong{font-size:31px}.vehicle-info span,.vehicle-info small{font-size:7px}.hud{left:12px;bottom:155px;gap:5px}.speed-panel,.gear-panel,.rpm-panel{min-width:0;padding:9px 10px}.speed-panel strong{font-size:32px}.gear-panel{min-width:58px}.gear-panel strong{font-size:29px}.rpm-panel{min-width:112px}.rpm-value strong{font-size:18px}.label{font-size:7px}.help{display:none}.touch-controls{display:flex}}
+@media(max-height:500px) and (min-width:701px){.hud{bottom:48px}.vehicle-info{top:85px}.topbar{height:60px}}
