@@ -60,3 +60,24 @@ body[data-control-mode="pc"] .help{display:block}
 .topbar{z-index:20;pointer-events:none}
 .top-actions{position:relative;z-index:21;pointer-events:auto}
 .top-actions button{position:relative;z-index:22;pointer-events:auto;touch-action:manipulation;cursor:pointer}
+
+/* Put the mode switch in its own high-priority touch target. */
+.topbar{pointer-events:auto;z-index:10000}
+.top-actions{pointer-events:auto;z-index:10001}
+#controlModeButton{
+  position:fixed;
+  top:92px;
+  right:14px;
+  z-index:10002;
+  min-height:44px;
+  padding:12px 15px;
+  background:rgba(12,20,26,.94);
+  border:1px solid rgba(239,231,212,.65);
+  color:#fff;
+  pointer-events:auto;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+@media(max-width:700px){
+  #controlModeButton{top:74px;right:12px}
+}
