@@ -6,6 +6,15 @@
     <meta name="theme-color" content="#101820" />
     <meta name="description" content="3D-симулятор ГАЗ-24-10 Волга на Three.js" />
     <title>Volga Simulator — ГАЗ-24-10</title>
+    <link rel="stylesheet" href="./src/style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="app">
@@ -27,6 +36,6 @@
       <div id="loading"><span></span> СОБИРАЕМ ВОЛГУ…</div>
       <div id="toast" role="status"></div>
     </div>
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>
