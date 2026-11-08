@@ -152,13 +152,13 @@ for(const s of [-1,1]){
   box(body,[.08,.16,.22],[s*.79,1.42,.2],chrome,.02);
 }
 // steering column and wheel; visible from the windscreen.
-const steering = new THREE.Group(); steering.position.set(-.48,1.47,-.78); body.add(steering);
+const steeringWheel = new THREE.Group(); steeringWheel.position.set(-.48,1.47,-.78); body.add(steeringWheel);
 const wheelRim = new THREE.Mesh(new THREE.TorusGeometry(.19,.018,8,32),black);
-steering.add(wheelRim);
-box(steering,[.025,.025,.025],[0,0,0],chrome,.01);
+steeringWheel.add(wheelRim);
+box(steeringWheel,[.025,.025,.025],[0,0,0],chrome,.01);
 for(let a=0;a<3;a++){
   const angle=a*Math.PI*2/3;
-  const spoke=box(steering,[.014,.19,.014],[Math.sin(angle)*.09,Math.cos(angle)*.09,0],chrome,.006);
+  const spoke=box(steeringWheel,[.014,.19,.014],[Math.sin(angle)*.09,Math.cos(angle)*.09,0],chrome,.006);
   spoke.rotation.z=-angle;
 }
 box(body,[1.63,.27,.16],[0,1.53,-.91],interior,.045);
@@ -344,7 +344,7 @@ function animate(){
   body.position.y=.0+verticalBounce;
   body.rotation.z=roll;
   body.rotation.x=pitch;
-  steering.rotation.z=-steering*.48;
+  steeringWheel.rotation.z=-steering*.48;
   wheels.forEach(w=>{
     w.group.rotation.x-=speed*dt/.49;
     if(w.front)w.group.rotation.y=steerAngle;
