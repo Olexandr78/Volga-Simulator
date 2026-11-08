@@ -271,6 +271,30 @@ document.querySelectorAll('[data-key]').forEach(button=>{
   button.addEventListener('lostpointercapture',up);
 });
 
+// Procedural engine audio. Browsers unlock sound after the first user gesture.
+let audioContext=null, engineOsc=null, engineHarmonic=null, engineFilter=null, engineGain=null;
+function startEngineAudio(){
+  if(audioContext)return;
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)return;
+  audioContext=new AudioCtx();
+  engineOsc=audioContext.createOscillator();
+  engineHarmonic=audioContext.createOscillator();
+  engineFilter=audioContext.createBiquadFilter();
+  engineGain=audioContext.createGain();
+  const harmonicGain=audioContext.createGain();
+  engineOsc.type='sawtooth'; engineHarmonic.type='triangle';
+  engineFilter.type='lowpass'; engineFilter.frequency.value=230;
+  engineGain.gain.value=0;
+  harmonicGain.gain.value=.18;
+  engineOsc.connect(engineFilter);
+  engineHarmonic.connect(harmonicGain); harmonicGain.connect(engineFilter);
+  engineFilter.connect(engineGain); engineGain.connect(audioContext.destination);
+  engineOsc.start(); engineHarmonic.start();
+}
+addEventListener('pointerdown',startEngineAudio,{once:true});
+addEventListener('keydown',startEngineAudio,{once:true});
+
 const clock=new THREE.Clock();
 const forward=new THREE.Vector3(), desiredCamera=new THREE.Vector3(), targetLook=new THREE.Vector3();
 const cameraOffset=new THREE.Vector3();
@@ -350,6 +374,13 @@ function animate(){
   speedBar.style.width=Math.min(kmh/160*100,100)+'%';
   rpmEl.textContent=String(Math.round(rpm/10)*10);
   rpmBar.style.width=Math.min(rpm/5500*100,100)+'%';
+  if(audioContext&&engineOsc){
+    const base=Math.max(18,rpm/30);
+    engineOsc.frequency.setTargetAtTime(base,audioContext.currentTime,.08);
+    engineHarmonic.frequency.setTargetAtTime(base*2.02,audioContext.currentTime,.08);
+    engineFilter.frequency.setTargetAtTime(engineOn?170+rpm*.075:90,audioContext.currentTime,.12);
+    engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):.0001,audioContext.currentTime,.16);
+  }
   const shownGear=speed<-.2?'R':gear===0?'N':String(gear);
   gearEl.textContent=shownGear;
   gearNameEl.textContent=shownGear==='R'?'ЗАДНИЙ ХОД':shownGear==='N'?'НЕЙТРАЛЬ':'ПЕРЕДАЧА';
