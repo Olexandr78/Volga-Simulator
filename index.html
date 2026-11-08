@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111820" />
+    <title>Volga Simulator</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="topbar">
+        <div class="brand"><span class="brand-mark">V</span><div><strong>VOLGA SIMULATOR</strong><small>ГАЗ-24-10 · ранняя сборка</small></div></div>
+        <div class="status"><span class="dot"></span> ПРОТОТИП</div>
+      </div>
+      <div class="hud">
+        <div class="speed-card"><span>СКОРОСТЬ</span><strong id="speed">0</strong><small>КМ/Ч</small></div>
+        <div class="gear-card"><span>ПЕРЕДАЧА</span><strong id="gear">N</strong></div>
+      </div>
+      <div class="help">WASD / ← ↑ → ↓ — управление <i></i> SPACE — ручник <i></i> C — камера <i></i> R — сброс</div>
+      <div id="loading">Загрузка сцены…</div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
