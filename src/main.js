@@ -259,20 +259,34 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>keys.clear());
-// Selectable control layout: remember the player's choice on this device.
+// Selectable control layout. Storage is optional: the switch must work even
+// when the browser blocks localStorage (private mode / restrictive settings).
 const controlModeButton = $('controlModeButton');
+function readControlMode(){
+  try { return localStorage.getItem('volga-control-mode'); }
+  catch (_) { return null; }
+}
+function saveControlMode(mode){
+  try { localStorage.setItem('volga-control-mode', mode); }
+  catch (_) { /* Keep the current mode for this page session. */ }
+}
 function setControlMode(mode, announce = false){
   document.body.dataset.controlMode = mode;
   controlModeButton.textContent = mode === 'tablet' ? 'РЕЖИМ: ПЛАНШЕТ' : 'РЕЖИМ: ПК';
-  localStorage.setItem('volga-control-mode', mode);
+  controlModeButton.setAttribute('aria-pressed', String(mode === 'tablet'));
+  saveControlMode(mode);
   if(announce) notify(mode === 'tablet' ? 'ВКЛЮЧЕНО СЕНСОРНОЕ УПРАВЛЕНИЕ' : 'ВКЛЮЧЕНО УПРАВЛЕНИЕ С КЛАВИАТУРЫ');
 }
-const savedControlMode = localStorage.getItem('volga-control-mode');
-const initialControlMode = savedControlMode || (matchMedia('(pointer: coarse)').matches ? 'tablet' : 'pc');
-setControlMode(initialControlMode);
-controlModeButton.addEventListener('click',()=>{
-  setControlMode(document.body.dataset.controlMode === 'tablet' ? 'pc' : 'tablet', true);
+controlModeButton.addEventListener('click', (event)=>{
+  event.preventDefault();
+  const nextMode = document.body.dataset.controlMode === 'tablet' ? 'pc' : 'tablet';
+  setControlMode(nextMode, true);
 });
+const savedControlMode = readControlMode();
+const initialControlMode = savedControlMode === 'pc' || savedControlMode === 'tablet'
+  ? savedControlMode
+  : (matchMedia('(pointer: coarse)').matches ? 'tablet' : 'pc');
+setControlMode(initialControlMode);
 $('cameraButton').addEventListener('click',setCameraMode);
 document.querySelectorAll('[data-key]').forEach(button=>{
   const code=button.dataset.key;
