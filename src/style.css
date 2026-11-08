@@ -43,5 +43,15 @@ kbd{display:inline-block;min-width:19px;margin:0 2px;padding:3px 5px;border:1px 
 .touch-controls button{pointer-events:auto;width:58px;height:54px;border:1px solid #eee4c455;border-radius:8px;background:#101820bb;color:#f4ead4;font:700 13px Manrope;backdrop-filter:blur(8px);touch-action:none}
 .touch-steer,.touch-pedals{display:flex;gap:8px;align-items:end}
 .touch-controls .gas{background:#66784eaa}.touch-controls .brake{background:#8d5149aa}
-@media(max-width:700px){.topbar{height:66px;padding:0 15px}.brand-mark{width:35px;height:35px;font-size:23px}.brand strong{font-size:11px}.brand small{font-size:8px}.live{display:none}.vehicle-info{top:82px;left:17px}.vehicle-info strong{font-size:31px}.vehicle-info span,.vehicle-info small{font-size:7px}.hud{left:12px;bottom:155px;gap:5px}.speed-panel,.gear-panel,.rpm-panel{min-width:0;padding:9px 10px}.speed-panel strong{font-size:32px}.gear-panel{min-width:58px}.gear-panel strong{font-size:29px}.rpm-panel{min-width:112px}.rpm-value strong{font-size:18px}.label{font-size:7px}.help{display:none}.touch-controls{display:flex}}
+@media(max-width:700px){.topbar{height:66px;padding:0 15px}.brand-mark{width:35px;height:35px;font-size:23px}.brand strong{font-size:11px}.brand small{font-size:8px}.live{display:none}.vehicle-info{top:82px;left:17px}.vehicle-info strong{font-size:31px}.vehicle-info span,.vehicle-info small{font-size:7px}.hud{left:12px;bottom:155px;gap:5px}.speed-panel,.gear-panel,.rpm-panel{min-width:0;padding:9px 10px}.speed-panel strong{font-size:32px}.gear-panel{min-width:58px}.gear-panel strong{font-size:29px}.rpm-panel{min-width:112px}.rpm-value strong{font-size:18px}.label{font-size:7px}.help{display:none}}
 @media(max-height:500px) and (min-width:701px){.hud{bottom:48px}.vehicle-info{top:85px}.topbar{height:60px}}
+/* Explicit control layout selected by the player. */
+body[data-control-mode="tablet"] .touch-controls{display:flex}
+body[data-control-mode="tablet"] .help{display:none}
+body[data-control-mode="tablet"] .hud{bottom:155px}
+body[data-control-mode="pc"] .touch-controls{display:none}
+body[data-control-mode="pc"] .help{display:block}
+@media(max-width:700px){
+  body[data-control-mode="pc"] .help{display:block}
+  body[data-control-mode="pc"] .hud{bottom:48px}
+}
