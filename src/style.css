@@ -55,3 +55,8 @@ body[data-control-mode="pc"] .help{display:block}
   body[data-control-mode="pc"] .help{display:block}
   body[data-control-mode="pc"] .hud{bottom:48px}
 }
+
+/* Keep the mode selector reliably tappable above the 3D canvas. */
+.topbar{z-index:20;pointer-events:none}
+.top-actions{position:relative;z-index:21;pointer-events:auto}
+.top-actions button{position:relative;z-index:22;pointer-events:auto;touch-action:manipulation;cursor:pointer}
