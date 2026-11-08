@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import './style.css';
 
 const $ = (id) => document.getElementById(id);
 const app = $('app');
