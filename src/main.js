@@ -183,6 +183,85 @@ for(const s of [-1,1]){
   box(body,[.035,.28,.24],[s*.91,.46,1.78],black,.025);
 }
 
+// A compact procedural town around the driving area: connected streets, sidewalks,
+// varied apartment blocks, shops, windows, street lamps and small courtyards.
+const cityRoad = mat(0x343a3b,0,0.98);
+const sidewalkMat = mat(0xaaa99c,0,0.95);
+const curbMat = mat(0x777a75,0,0.92);
+const facadeMats = [0xb9aa91,0x9daba9,0xb7b4a8,0x9c8d7e,0xc0b49b,0x879a9b].map(c=>mat(c,0,0.88));
+const windowMat = mat(0x40545b,0.18,0.22,{emissive:0x101b20});
+const litWindowMat = mat(0xc6ad78,0.08,0.3,{emissive:0x33240e});
+const roofMat = mat(0x555b59,0,0.9);
+const city = new THREE.Group(); scene.add(city);
+// Streets run in both directions, forming a navigable grid.
+for(let x=-105;x<=105;x+=30){
+  mesh(new THREE.PlaneGeometry(13,330),cityRoad,city,[x,-.068,-15],[-Math.PI/2,0,0],false);
+  for(const side of [-1,1]){
+    mesh(new THREE.PlaneGeometry(2.2,330),sidewalkMat,city,[x+side*7.6,-.045,-15],[-Math.PI/2,0,0],false);
+    mesh(new THREE.BoxGeometry(.16,.18,330),curbMat,city,[x+side*6.45,.035,-15], [0,0,0],false);
+  }
+}
+for(let z=-165;z<=135;z+=30){
+  mesh(new THREE.PlaneGeometry(240,13),cityRoad,city,[0,-.067,z],[-Math.PI/2,0,0],false);
+  for(const side of [-1,1]){
+    mesh(new THREE.PlaneGeometry(240,2.2),sidewalkMat,city,[0,-.044,z+side*7.6],[-Math.PI/2,0,0],false);
+    mesh(new THREE.BoxGeometry(240,.18,.16),curbMat,city,[0,.035,z+side*6.45],[0,0,0],false);
+  }
+}
+// Buildings occupy the blocks between streets; each gets a distinct height and facade.
+let buildingIndex=0;
+for(let x=-90;x<105;x+=30){
+  for(let z=-150;z<135;z+=30){
+    if(Math.abs(x+15)<16 && Math.abs(z+15)<17) continue;
+    const w=12+(buildingIndex%3)*2.1;
+    const d=12+((buildingIndex*2)%3)*1.8;
+    const floors=2+(buildingIndex*7%5);
+    const h=floors*3.05;
+    const bx=x+15, bz=z+15;
+    const b=new THREE.Group(); b.position.set(bx,0,bz); city.add(b);
+    const facade=facadeMats[buildingIndex%facadeMats.length];
+    box(b,[w,h,d],[0,h/2,0],facade,.12,3);
+    box(b,[w+.35,.28,d+.35],[0,h+.12,0],roofMat,.06,2);
+    // Recessed-looking front windows and a shopfront at street level.
+    for(let floor=0;floor<floors;floor++){
+      const y=1.05+floor*3.05;
+      const count=Math.max(2,Math.floor(w/3.1));
+      for(let n=0;n<count;n++){
+        const wx=-w/2+1.55+n*(w-3.1)/(count-1||1);
+        box(b,[1.12,1.35,.055],[wx,y,-d/2-.035],(floor===0&&buildingIndex%4===0)?litWindowMat:windowMat,.035,2);
+        box(b,[1.2,.055,.075],[wx,y-.72,-d/2-.035],chrome,.012,2);
+      }
+    }
+    if(buildingIndex%4===0){
+      box(b,[w*.72,1.75,.09],[0,1.0,-d/2-.08],mat(0x52666a,0.15,.25),.035,2);
+      box(b,[w*.76,.16,.12],[0,1.95,-d/2-.08],mat(0xe0d1ad,0,0.6),.025,2);
+    }
+    // Side windows make the blocks readable when driving along cross streets.
+    for(let floor=0;floor<floors;floor++){
+      const y=1.05+floor*3.05;
+      for(const side of [-1,1]){
+        box(b,[.055,1.25,1.05],[side*(w/2+.035),y,0],windowMat,.025,2);
+      }
+    }
+    buildingIndex++;
+  }
+}
+// Street lamps at intersections and occasional planted trees in courtyards.
+const lampMetal=mat(0x353d3d,.72,.32), lampGlow=mat(0xffe2a4,.05,.25,{emissive:0x8a6328});
+for(let x=-105;x<=105;x+=30) for(let z=-165;z<=135;z+=30){
+  if((x/30+z/30)%2!==0) continue;
+  const lx=x+8, lz=z+8;
+  mesh(new THREE.CylinderGeometry(.055,.085,4.8,8),lampMetal,city,[lx,2.4,lz]);
+  tube(city,[[lx,4.65,lz],[lx,5.0,lz-.35],[lx,5.05,lz-.85]],.045,lampMetal);
+  sphere(city,[lx,5.0,lz-.86],[.16,.1,.2],lampGlow);
+}
+for(let i=0;i<32;i++){
+  const x=-100+(i*37%200), z=-155+(i*53%280);
+  if(Math.abs((x+15)%30)<7 || Math.abs((z+15)%30)<7) continue;
+  mesh(new THREE.CylinderGeometry(.12,.2,2.3,7),mat(0x554738),city,[x,1.15,z]);
+  mesh(new THREE.SphereGeometry(1,10,8),mat(0x536b4e),city,[x,2.9,z]).scale.set(1.15,1.35,1.15);
+}
+
 // Front grille with vertical bars, emblem, headlights and indicators.
 box(body,[1.06,.43,.075],[0,1.0,-2.395],darkChrome,.035);
 box(body,[.91,.33,.04],[0,1.0,-2.445],black,.015);
@@ -213,7 +292,11 @@ sphere(body,[.91,1.12,1.72],[.035,.055,.025],chrome);
 // Wheels with sidewall, tread, stamped steel rims, lug nuts and suspension hints.
 const wheels=[];
 for(const s of [-1,1]) for(const z of [-1.48,1.48]){
-  const wheel=new THREE.Group(); wheel.position.set(s*1.0,.57,z); car.add(wheel);
+  // Steering happens around a fixed kingpin pivot; wheel spin is isolated in its child.
+  const steeringPivot=new THREE.Group();
+  steeringPivot.position.set(s*1.0,.57,z);
+  car.add(steeringPivot);
+  const wheel=new THREE.Group(); steeringPivot.add(wheel);
   const tire=mesh(new THREE.CylinderGeometry(.49,.49,.27,40),rubber,wheel,[0,0,0],[0,0,Math.PI/2]);
   const sidewall=mesh(new THREE.TorusGeometry(.39,.075,12,40),tireSide,wheel,[s*.145,0,0],[0,Math.PI/2,0]);
   const rim=mesh(new THREE.CylinderGeometry(.285,.285,.285,32),rimMat,wheel,[s*.15,0,0],[0,0,Math.PI/2]);
@@ -231,7 +314,7 @@ for(const s of [-1,1]) for(const z of [-1.48,1.48]){
     tread.rotation.x=-a;
   }
   // Hub bolts and front steering knuckle are visual details only.
-  wheels.push({group:wheel,front:z<0,side:s});
+  wheels.push({group:wheel,pivot:steeringPivot,front:z<0,side:s});
 }
 
 // Exhaust tail pipe.
@@ -348,7 +431,7 @@ function animate(){
   const absSpeed=Math.abs(speed);
   const steerTarget=(left?1:0)-(right?1:0);
   steering=smooth(steering,steerTarget,5.5,dt);
-  steerAngle=steering*.48;
+  steerAngle=steering*.30;
 
   // Approximate 2.4-litre petrol engine, 4-speed manual ratios with automatic shifting for playability.
   const targetGear=absSpeed<.35?0:absSpeed<5.2?1:absSpeed<10.5?2:absSpeed<17?3:absSpeed<25?4:5;
@@ -383,7 +466,7 @@ function animate(){
   steeringWheel.rotation.z=-steering*.48;
   wheels.forEach(w=>{
     w.group.rotation.x-=speed*dt/.49;
-    if(w.front)w.group.rotation.y=steerAngle;
+    if(w.front)w.pivot.rotation.y=steerAngle;
   });
   shadow.position.set(car.position.x,-.025,car.position.z);
 
