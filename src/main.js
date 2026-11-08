@@ -259,6 +259,20 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>keys.clear());
+// Selectable control layout: remember the player's choice on this device.
+const controlModeButton = $('controlModeButton');
+function setControlMode(mode, announce = false){
+  document.body.dataset.controlMode = mode;
+  controlModeButton.textContent = mode === 'tablet' ? 'РЕЖИМ: ПЛАНШЕТ' : 'РЕЖИМ: ПК';
+  localStorage.setItem('volga-control-mode', mode);
+  if(announce) notify(mode === 'tablet' ? 'ВКЛЮЧЕНО СЕНСОРНОЕ УПРАВЛЕНИЕ' : 'ВКЛЮЧЕНО УПРАВЛЕНИЕ С КЛАВИАТУРЫ');
+}
+const savedControlMode = localStorage.getItem('volga-control-mode');
+const initialControlMode = savedControlMode || (matchMedia('(pointer: coarse)').matches ? 'tablet' : 'pc');
+setControlMode(initialControlMode);
+controlModeButton.addEventListener('click',()=>{
+  setControlMode(document.body.dataset.controlMode === 'tablet' ? 'pc' : 'tablet', true);
+});
 $('cameraButton').addEventListener('click',setCameraMode);
 document.querySelectorAll('[data-key]').forEach(button=>{
   const code=button.dataset.key;
