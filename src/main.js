@@ -267,7 +267,7 @@ function readControlMode(){
   catch (_) { return null; }
 }
 function saveControlMode(mode){
-  try { localStorage.setItem('volga-control-mode', mode); }
+  try { localStorage.setItem('volga-control-mode-v2', mode); }
   catch (_) { /* Keep the current mode for this page session. */ }
 }
 function setControlMode(mode, announce = false){
@@ -288,10 +288,13 @@ controlModeButton.addEventListener('pointerup', toggleControlMode);
 controlModeButton.addEventListener('click', (event)=>{
   if(event.detail === 0) toggleControlMode(event);
 });
-const savedControlMode = readControlMode();
-const initialControlMode = savedControlMode === 'pc' || savedControlMode === 'tablet'
-  ? savedControlMode
-  : (matchMedia('(pointer: coarse)').matches ? 'tablet' : 'pc');
+// Tablet controls are the default on every fresh installation.
+// Use a versioned key so an old saved "PC" choice cannot override this update.
+const savedControlMode = (() => {
+  try { return localStorage.getItem('volga-control-mode-v2'); }
+  catch (_) { return null; }
+})();
+const initialControlMode = savedControlMode === 'pc' ? 'pc' : 'tablet';
 setControlMode(initialControlMode);
 $('cameraButton').addEventListener('click',setCameraMode);
 document.querySelectorAll('[data-key]').forEach(button=>{
