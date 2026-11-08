@@ -277,10 +277,16 @@ function setControlMode(mode, announce = false){
   saveControlMode(mode);
   if(announce) notify(mode === 'tablet' ? 'ВКЛЮЧЕНО СЕНСОРНОЕ УПРАВЛЕНИЕ' : 'ВКЛЮЧЕНО УПРАВЛЕНИЕ С КЛАВИАТУРЫ');
 }
-controlModeButton.addEventListener('click', (event)=>{
+function toggleControlMode(event){
   event.preventDefault();
+  event.stopPropagation();
   const nextMode = document.body.dataset.controlMode === 'tablet' ? 'pc' : 'tablet';
   setControlMode(nextMode, true);
+}
+// Pointer events cover touchscreens and mouse; click remains as a keyboard fallback.
+controlModeButton.addEventListener('pointerup', toggleControlMode);
+controlModeButton.addEventListener('click', (event)=>{
+  if(event.detail === 0) toggleControlMode(event);
 });
 const savedControlMode = readControlMode();
 const initialControlMode = savedControlMode === 'pc' || savedControlMode === 'tablet'
