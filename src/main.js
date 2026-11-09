@@ -457,6 +457,7 @@ shadow.scale.set(1,1.65,1);
 const keys=new Set();
 let cameraMode=0, speed=0, heading=0, steering=0, rpm=0, gear=0;
 let engineOn=false, handbrake=false, steerAngle=0;
+let clutchEngagement=1, clutchStallTimer=0;
 let verticalBounce=0, roll=0, pitch=0;
 let isOnFoot=false, starterHold=0, stallCountdown=85+Math.random()*55;
 let activeBuilding=null;
@@ -526,10 +527,13 @@ function pourCanIntoTank(){
   notify('В БАК ЗАЛИТО '+amount.toFixed(1)+' Л');
 }
 function shiftGear(next){
-  if(!keys.has('KeyC') && gear!==0){notify('ВЫЖМИ СЦЕПЛЕНИЕ: C');return;}
-  if(Math.abs(speed)>1.5 && next===-1){notify('ЗАДНЮЮ ВКЛЮЧАЙ ПОСЛЕ ОСТАНОВКИ');return;}
+  if(!keys.has('KeyC')){notify('ПЕРЕКЛЮЧЕНИЕ НЕВОЗМОЖНО — ВЫЖМИ СЦЕПЛЕНИЕ (C)');return;}
+  if(Math.abs(speed)>0.45 && next===-1){notify('ЗАДНЮЮ ВКЛЮЧАЙ ТОЛЬКО ПОСЛЕ ПОЛНОЙ ОСТАНОВКИ');return;}
+  if(next===gear)return;
+  if(next>=1&&speed<-.4){notify('СНАЧАЛА ОСТАНОВИСЬ ПЕРЕД ВКЛЮЧЕНИЕМ ПЕРЕДАЧИ');return;}
   gear=THREE.MathUtils.clamp(next,-1,4);
-  notify('ПЕРЕДАЧА: '+(gear===-1?'R':gear===0?'N':gear));
+  clutchStallTimer=0;
+  notify('КОРОБКА: '+(gear===-1?'ЗАДНЯЯ':gear===0?'НЕЙТРАЛЬ':gear+'-Я ПЕРЕДАЧА'));
 }
 addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
@@ -547,19 +551,18 @@ addEventListener('keydown',e=>{
     }
   }
   if(!isOnFoot&&!e.repeat){
-    if(e.code==='Digit0')shiftGear(0);
-    if(e.code==='Digit1')shiftGear(1);
-    if(e.code==='Digit2')shiftGear(2);
-    if(e.code==='Digit3')shiftGear(3);
-    if(e.code==='Digit4')shiftGear(4);
     if(e.code==='KeyX')shiftGear(-1);
-    if(e.code==='ShiftLeft'||e.code==='ShiftRight')shiftGear(Math.min(4,Math.max(1,gear+1)));
-    if(e.code==='ControlLeft'||e.code==='ControlRight')shiftGear(Math.max(-1,gear-1));
+    if(e.code==='ShiftLeft'||e.code==='ShiftRight')shiftGear(gear===-1?0:Math.min(4,gear+1));
+    if(e.code==='ControlLeft'||e.code==='ControlRight')shiftGear(Math.max(0,gear-1));
     if(e.code==='KeyF'&&isOnFoot)pourCanIntoTank();
     if(e.code==='KeyR'&&!isOnFoot)refuelAtStation();
   }
 });
-addEventListener('keyup',e=>keys.delete(e.code));
+addEventListener('keyup',e=>{
+  keys.delete(e.code);
+  // A quick E tap exits a stopped car with a dead engine; holding E cranks the starter.
+  if(e.code==='KeyE'&&!isOnFoot&&!engineOn&&starterHold<.25)exitCar();
+});
 document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
   const code=button.dataset.key;
   const press=e=>{
@@ -633,20 +636,36 @@ function animate(){
     const steerTarget=(left?1:0)-(right?1:0);
     steering=smooth(steering,steerTarget,5.5,dt);
     steerAngle=steering*.30;
-    const clutch=keys.has('KeyC');
-    const gearRatio=gear===-1?3.2:([0,0,3.54,2.26,1.45,1.0][gear]||0);
+    const clutchPedal=keys.has('KeyC');
+    clutchEngagement=smooth(clutchEngagement,clutchPedal?0:1,clutchPedal?13:2.4,dt);
+    const gearRatio=gear===-1?3.2:([0,3.54,2.26,1.45,1.0][gear]||0);
     const direction=gear===-1?-1:1;
-    const gearTop=gear===-1?5:([0,0,11,19,30,43][gear]||0);
-    const drive=throttle&&engineOn&&gear!==0&&!clutch&&absSpeed<gearTop?direction*(gear===1?3.4:gear===2?2.5:gear===3?1.8:gear===4?1.25:2.5):0;
+    const gearTop=gear===-1?5:([0,11,19,30,43][gear]||0);
+    const torqueByGear=gear===-1?2.0:([0,4.2,2.8,1.9,1.3][gear]||0);
+    const drive=throttle&&engineOn&&gear!==0&&clutchEngagement>.06&&absSpeed<gearTop
+      ?direction*torqueByGear*clutchEngagement:0;
     speed+=drive*dt;
     if(brake)speed-=Math.sign(speed||1)*9*dt;
     if(handbrake)speed-=Math.sign(speed||1)*Math.min(absSpeed*4,12)*dt;
-    if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,.48)*dt;
+    const rollingResistance=gear!==0&&clutchEngagement>.8?.72:.48;
+    if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,rollingResistance)*dt;
     if(gear===-1)speed=THREE.MathUtils.clamp(speed,-5,0);
     else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,gearTop);
     else speed=THREE.MathUtils.clamp(speed,-43,43);
-    const targetRpm=engineOn?(gear===0||clutch?850+(throttle?Math.min(3900,Math.abs(speed)*100):0):THREE.MathUtils.clamp(850+absSpeed*gearRatio*24,850,4800)):0;
+    const targetRpm=engineOn
+      ?(gear===0||clutchEngagement<.18
+        ?850+(throttle?Math.min(3900,Math.abs(speed)*100+900):0)
+        :THREE.MathUtils.clamp(850+absSpeed*gearRatio*24+(throttle?320:0),850,5000))
+      :0;
     rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
+    // Releasing the clutch in gear without throttle at a standstill stalls the engine.
+    if(engineOn&&gear!==0&&clutchEngagement>.84&&absSpeed<.85&&!throttle){
+      clutchStallTimer+=dt;
+      if(clutchStallTimer>.72){
+        engineOn=false;rpm=0;starterHold=0;clutchStallTimer=0;
+        notify('ДВИГАТЕЛЬ ЗАГЛОХ — ВЫЖМИ СЦЕПЛЕНИЕ И ЗАВЕДИ СНОВА');
+      }
+    }else clutchStallTimer=0;
     if(engineOn){
       stallCountdown-=dt;
       if(stallCountdown<=0){
@@ -689,7 +708,7 @@ function animate(){
       engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):(keys.has('KeyE')?.012:.0001),audioContext.currentTime,.16);
     }
     const nearStation=inStation(car.position.x,car.position.z);
-    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'WASD — ехать · C — сцепление · Shift/Ctrl — передачи · 1–4 / 0 / X — выбор · I — заглушить · E — выйти':'НЕЙТРАЛЬ · УДЕРЖИВАЙ E ДЛЯ ЗАПУСКА СТАРТЕРОМ'))+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
+    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'W — газ · S — тормоз · A/D — руль · C — сцепление · Shift/Ctrl — механическое переключение · X — задняя · Space — ручник · E — выйти':'НЕЙТРАЛЬ · УДЕРЖИВАЙ E ДЛЯ ЗАПУСКА СТАРТЕРОМ'))+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
   }else{
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
     const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
