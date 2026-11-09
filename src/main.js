@@ -583,13 +583,35 @@ document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
     window.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true}));
     button.classList.remove('pressed');
   };
-  button.addEventListener('pointerdown',press);
+  button.addEventListener('pointerdown',e=>{
+    press(e);
+    try{button.setPointerCapture(e.pointerId);}catch{}
+  });
   button.addEventListener('pointerup',release);
   button.addEventListener('pointercancel',release);
   button.addEventListener('lostpointercapture',release);
   button.addEventListener('contextmenu',e=>e.preventDefault());
 });
-addEventListener('blur',()=>keys.clear());
+
+// The mode selector controls whether touch pedals/shifter or the keyboard legend is shown.
+const controlModeButton=$('controlModeButton');
+const controlModeStorageKey='volga-control-mode-v2';
+function setControlMode(mode,save=true){
+  const selected=mode==='tablet'?'tablet':'pc';
+  document.body.dataset.controlMode=selected;
+  if(controlModeButton)controlModeButton.textContent='РЕЖИМ: '+(selected==='tablet'?'ПЛАНШЕТ':'ПК');
+  if(save){try{localStorage.setItem(controlModeStorageKey,selected);}catch{}}
+}
+let savedControlMode=null;
+try{savedControlMode=localStorage.getItem(controlModeStorageKey);}catch{}
+setControlMode(savedControlMode||(matchMedia('(pointer: coarse)').matches?'tablet':'pc'),false);
+controlModeButton?.addEventListener('click',()=>{
+  setControlMode(document.body.dataset.controlMode==='tablet'?'pc':'tablet');
+});
+addEventListener('blur',()=>{
+  for(const code of keys)keys.delete(code);
+  document.querySelectorAll('.touch-controls button.pressed').forEach(button=>button.classList.remove('pressed'));
+});
 
 // Procedural engine audio. Browsers unlock sound after the first user gesture.
 let audioContext=null, engineOsc=null, engineHarmonic=null, engineFilter=null, engineGain=null;
@@ -716,7 +738,7 @@ function animate(){
       engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):(keys.has('KeyE')?.012:.0001),audioContext.currentTime,.16);
     }
     const nearStation=inStation(car.position.x,car.position.z);
-    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'W — газ · S — тормоз · A/D — руль · C — сцепление · Shift/Ctrl — механическое переключение · X — задняя · Space — ручник · E — выйти':'НЕЙТРАЛЬ · УДЕРЖИВАЙ E ДЛЯ ЗАПУСКА СТАРТЕРОМ'))+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
+    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'W — газ · S — тормоз · A/D — руль · C — сцепление · 1–4 — передачи · 0 — нейтраль · X — задняя · Space — ручник · E — выйти':'НЕЙТРАЛЬ · УДЕРЖИВАЙ E ДЛЯ ЗАПУСКА СТАРТЕРОМ'))+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
   }else{
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
     const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
