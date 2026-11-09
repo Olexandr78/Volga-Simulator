@@ -563,6 +563,9 @@ addEventListener('keydown',e=>{
     if(e.code==='Digit2'||e.code==='Numpad2')shiftGear(2);
     if(e.code==='Digit3'||e.code==='Numpad3')shiftGear(3);
     if(e.code==='Digit4'||e.code==='Numpad4')shiftGear(4);
+    // Sequential manual shifting: Shift = up, Ctrl = down.
+    if(e.code==='ShiftLeft'||e.code==='ShiftRight')shiftGear(Math.min(4,gear+1));
+    if(e.code==='ControlLeft'||e.code==='ControlRight')shiftGear(Math.max(0,gear-1));
     if(e.code==='KeyX')shiftGear(-1);
     if(e.code==='KeyR'&&!isOnFoot)refuelAtStation();
   }
