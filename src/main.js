@@ -161,7 +161,7 @@ for(const p of [{x:-68,z:-80},{x:-68,z:-220},{x:70,z:-80},{x:70,z:-220},{x:70,z:
 // Универмаг и кинотеатр «Родина».
 cityBuilding(-30,80,28,8,18,mat(0xaaa89d),0);
 box(scene,[18,2.2,.15],[-15.8,6.2,80],mat(0xa51c1c),.04,2);
-box(scene,[32,12,22],[-34,6,-134],brick,.08,3);
+cityBuilding(-34,-134,32,12,22,brick,0);
 box(scene,[20,2.2,.15],[-17.8,8.5,-134],mat(0x234e80),.04,2);
 // Советская АЗС №42 с навесом, колонками и кассой.
 const stationX=-44, stationZ=20;
@@ -175,7 +175,7 @@ for(const z of [16.5,23.5]){
   box(scene,[.58,.55,.07],[stationX,.99,z-.53],mat(0xd9d6c7),.02,2);
   tube(scene,[[stationX+.4,1.6,z],[stationX+.9,1.8,z+.4],[stationX+1.1,.35,z+.7]],.035,black);
 }
-box(scene,[8,3.6,6],[stationX-14,1.8,stationZ],mat(0x283c4b),.06,3);
+cityBuilding(stationX-14,stationZ,8,3.6,6,mat(0x283c4b),0);
 box(scene,[6,.8,.08],[stationX-14,2.5,stationZ-3.05],mat(0x9c2525),.02,2);
 // Фонари, берёзы, автобусная остановка и таксофон.
 for(let z=-280;z<=280;z+=55){
