@@ -81,3 +81,6 @@ body[data-control-mode="pc"] .help{display:block}
 @media(max-width:700px){
   #controlModeButton{top:74px;right:12px}
 }
+
+.game-prompt{position:fixed;z-index:8;left:50%;bottom:18px;transform:translateX(-50%);max-width:min(94vw,760px);padding:10px 16px;border:1px solid #e4d3ad66;border-radius:5px;background:rgba(8,14,18,.88);color:#f2e7ce;font:11px 'Courier New',monospace;text-align:center;pointer-events:none;box-shadow:0 8px 24px #0006}
+body[data-control-mode="tablet"] .game-prompt{bottom:150px}
