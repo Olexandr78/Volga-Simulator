@@ -459,7 +459,7 @@ let gameTime=0, promptText='';
 let toastTimer;
 function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200)}
 function setCameraMode(){cameraMode=(cameraMode+1)%4;notify(['КАМЕРА: СЗАДИ','КАМЕРА: КАПОТ','КАМЕРА: САЛОН','КАМЕРА: СВЕРХУ'][cameraMode])}
-function resetCar(){car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=0;gear=0;engineOn=false;isOnFoot=false;player.visible=false;activeBuilding=null;starterHold=0;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА · ЗАЖМИ E ДЛЯ ЗАПУСКА')}
+function resetCar(){if(activeBuilding){activeBuilding.interior.visible=false;activeBuilding.exterior.visible=true;activeBuilding=null;}car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=0;gear=0;engineOn=false;isOnFoot=false;player.visible=false;starterHold=0;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА · ЗАЖМИ E ДЛЯ ЗАПУСКА')}
 const player=new THREE.Group(); scene.add(player);
 const playerBody=mesh(new THREE.CapsuleGeometry(.28,.82,4,8),mat(0x303c4a),player,[0,.88,0]);
 const playerHead=sphere(player,[0,1.55,0],[.23,.25,.23],mat(0xc69b78));
@@ -717,7 +717,9 @@ function animate(){
     else if(nearbyBuilding)updatePrompt('E — войти в '+nearbyBuilding.name);
     else if(!nearFront)updatePrompt('WASD — идти · Shift — бежать · Подойди к передку и удерживай E, чтобы завести ручкой');
     if(nearFront&&!engineOn&&starterHold===0)updatePrompt('У РАДИАТОРА: удерживай E 2.4 секунды — завести ручкой');
-    camera.position.lerp(new THREE.Vector3(player.position.x+Math.sin(player.rotation.y)*5,3.0,player.position.z+Math.cos(player.rotation.y)*5),1-Math.exp(-5*dt));
+    const footCameraDistance=activeBuilding?THREE.MathUtils.clamp(activeBuilding.d*.22,1.7,3.0):5;
+    const footCameraHeight=activeBuilding?2.15:3.0;
+    camera.position.lerp(new THREE.Vector3(player.position.x+Math.sin(player.rotation.y)*footCameraDistance,footCameraHeight,player.position.z+Math.cos(player.rotation.y)*footCameraDistance),1-Math.exp(-5*dt));
     camera.lookAt(player.position.x,1.25,player.position.z);
     playerBody.position.y=.88+Math.abs(Math.sin(gameTime*9))*((f||r)? .035:0);
     playerLegL.rotation.x=Math.sin(gameTime*9)*((f||r)? .35:0);
