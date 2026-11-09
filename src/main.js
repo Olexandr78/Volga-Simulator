@@ -571,7 +571,7 @@ function animate(){
         notify('ДВИГАТЕЛЬ ЗАГЛОХ! ВЫЙДИ И ЗАВЕДИ РУЧКОЙ');
         stallCountdown=85+Math.random()*85;
       }
-      fuelFlow=.00022+(absSpeed/3.6)*11.5/3600;
+      fuelFlow=.00022+absSpeed*11.5/100000;
       fuelLiters=Math.max(0,fuelLiters-fuelFlow*dt);
       mileageKm+=absSpeed*dt/1000;
       if(fuelLiters<=0){engineOn=false;notify('БЕНЗИН ЗАКОНЧИЛСЯ! НУЖНА КАНИСТРА ИЛИ АЗС');}
