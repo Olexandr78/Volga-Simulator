@@ -114,7 +114,9 @@ function createRoomInterior(w,d){
   const iw=Math.max(7,w-1.8), id=Math.max(7,d-1.8);
   const wall=mat(0xb8b09e,0,0.92), floor=mat(0x77736a,0,0.96);
   box(room,[iw,.16,id],[0,.08,0],floor);
-  box(room,[iw,2.9,.16],[0,1.53,-id/2],wall);
+  box(room,[(iw-1.2)/2,2.9,.16],[-(iw+1.2)/4,1.53,-id/2],wall);
+  box(room,[(iw-1.2)/2,2.9,.16],[(iw+1.2)/4,1.53,-id/2],wall);
+  box(room,[1.2,.75,.16],[0,2.62,-id/2],wall);
   box(room,[iw,2.9,.16],[0,1.53,id/2],wall);
   box(room,[.16,2.9,id],[-iw/2,1.53,0],wall);
   box(room,[.16,2.9,id],[iw/2,1.53,0],wall);
@@ -128,6 +130,11 @@ function createRoomInterior(w,d){
   return room;
 }
 function registerEnterable(exterior,x,z,w,d,name){
+  const doorMat=mat(0x594331,0,0.82), frameMat=mat(0xaaa18e,0,0.8);
+  box(exterior,[1.18,2.18,.14],[0,1.09,-d/2-.095],doorMat,.025,2);
+  box(exterior,[1.34,.12,.2],[0,2.2,-d/2-.095],frameMat,.02,2);
+  for(const side of [-1,1])box(exterior,[.1,2.2,.2],[side*.64,1.1,-d/2-.095],frameMat,.02,2);
+  box(exterior,[1.5,.18,.85],[0,.09,-d/2-.42],concrete,.025,2);
   const interior=createRoomInterior(w,d);
   interior.position.set(x,0,z);scene.add(interior);interior.visible=false;
   enterableBuildings.push({exterior,interior,x,z,w,d,name,doorX:x,doorZ:z-d/2-.9});
