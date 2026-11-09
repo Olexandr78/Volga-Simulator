@@ -74,29 +74,100 @@ function quad(parent, points, material) {
   return mesh(g, material, parent, [0,0,0], [0,0,0]);
 }
 
-// Test area, tarmac and distant scenery.
-const ground = mesh(new THREE.PlaneGeometry(700,700), mat(0x65705d,0,0.98), scene, [0,-0.12,0], [-Math.PI/2,0,0], false);
-ground.receiveShadow = true;
-const road = mesh(new THREE.PlaneGeometry(22,260), mat(0x303638,0,0.97), scene, [0,-0.075,-30], [-Math.PI/2,0,0], false);
-road.receiveShadow = true;
-const shoulderMat = mat(0xaaa28b,0,0.96);
-for (const x of [-11.3,11.3]) {
-  const edge = mesh(new THREE.PlaneGeometry(.16,260), shoulderMat, scene, [x,-.06,-30], [-Math.PI/2,0,0], false);
+// Горький / советский городской район по визуальному референсу из загруженного проекта.
+const ground = mesh(new THREE.PlaneGeometry(800,800),mat(0x405238,0,0.98),scene,[0,-.13,0],[-Math.PI/2,0,0],false);
+const asphalt = mat(0x292c30,0,0.94), sidewalk = mat(0x96999a,0,0.9), curb = mat(0x656a6b,0,0.9);
+const laneWhite = mat(0xd9dcda,0,0.85), grass = mat(0x405a35,0,0.98);
+const windowDark = mat(0x344b5c,.12,.25), windowLit = mat(0xb99a63,.08,.3,{emissive:0x32230e});
+const concrete = mat(0x92999d,0,0.9), brick = mat(0x914c3e,0,0.9);
+const roadMain = mesh(new THREE.PlaneGeometry(16,640),asphalt,scene,[0,-.07,0],[-Math.PI/2,0,0],false);
+for(const z of [-160,0,160]) mesh(new THREE.PlaneGeometry(540,14),asphalt,scene,[0,-.065,z],[-Math.PI/2,0,0],false);
+for(const x of [-9.8,9.8]) mesh(new THREE.BoxGeometry(3.6,.22,640),sidewalk,scene,[x,.11,0],[0,0,0],false);
+for(const z of [-160,0,160]){
+  for(const x of [-.15,.15]) mesh(new THREE.PlaneGeometry(.18,640),laneWhite,scene,[x,-.045,0],[-Math.PI/2,0,0],false);
+  for(const offset of [-11,11]) for(let x=-7.2;x<=7.2;x+=1.4)
+    mesh(new THREE.PlaneGeometry(.6,5.2),laneWhite,scene,[x,-.035,z+offset],[-Math.PI/2,0,0],false);
 }
-const lineMat = mat(0xe5ddbd,0,0.9);
-for (let z=-150; z<100; z+=10) mesh(new THREE.PlaneGeometry(.16,5),lineMat,scene,[0,-.055,z],[-Math.PI/2,0,0],false);
-const gravel = mat(0x74796a,0,1);
-for(let i=0;i<36;i++){
-  const x=(i%2?1:-1)*(15+(i%6)*4);
-  const z=-135+Math.floor(i/2)*15;
-  const trunk=mesh(new THREE.CylinderGeometry(.16,.23,2.4,7),mat(0x554738),scene,[x,1.2,z]);
-  const crown=mesh(new THREE.ConeGeometry(1.5,4.5,8),mat(i%3===0?0x52664c:0x647456),scene,[x,4.4,z]);
-  crown.castShadow=true;
+for(let z=-300;z<300;z+=9){
+  if([-160,0,160].some(v=>Math.abs(z-v)<12)) continue;
+  for(const x of [-3.8,3.8]) mesh(new THREE.PlaneGeometry(.16,3.8),laneWhite,scene,[x,-.04,z],[-Math.PI/2,0,0],false);
 }
-const hangar = new THREE.Group(); scene.add(hangar);
-box(hangar,[18,5,.5],[0,2.5,-38],mat(0x777b78,0,0.85),.08);
-for(let x=-7;x<=7;x+=2.8) box(hangar,[.09,5.2,.12],[x,2.6,-37.72],darkChrome);
-box(hangar,[19,.35,.8],[0,5.1,-38],mat(0x454c4d),.05);
+// Боковые улицы, дворы и кварталы.
+for(const x of [-45,45]) mesh(new THREE.PlaneGeometry(12,640),asphalt,scene,[x,-.075,0],[-Math.PI/2,0,0],false);
+for(const z of [-80,-240,80,240]) mesh(new THREE.PlaneGeometry(260,12),asphalt,scene,[0,-.075,z],[-Math.PI/2,0,0],false);
+function cityBuilding(x,z,w,h,d,material,style=0){
+  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  box(g,[w,h,d],[0,h/2,0],material,.08,3);
+  box(g,[w+.25,.35,d+.25],[0,h+.16,0],mat(style===1?0x4a4c4d:0x65696a,0,.9),.04,2);
+  const floors=Math.max(2,Math.round(h/3.05));
+  const cols=Math.max(3,Math.floor(w/4));
+  for(let f=0;f<floors;f++) for(let c=0;c<cols;c++){
+    const wx=-w/2+(c+.5)*w/cols, wy=1.15+f*3.02;
+    const wm=((c*7+f*3+Math.round(x+z))%7===0)?windowLit:windowDark;
+    box(g,[1.45,1.65,.07],[wx,wy,-d/2-.045],wm,.025,2);
+    box(g,[.07,1.8,.08],[wx,wy,-d/2-.04],concrete,.01,1);
+    box(g,[1.55,.08,.09],[wx,wy-.88,-d/2-.04],concrete,.01,1);
+    if(style===1) box(g,[.07,1.55,1.25],[w/2+.04,wy,(-d/2)+(c+.5)*d/cols],windowDark,.02,1);
+  }
+  return g;
+}
+// Пятиэтажные хрущёвки и девятиэтажные панельные дома.
+for(const p of [{x:-32,z:-80},{x:-32,z:-220},{x:32,z:-80},{x:32,z:-220},{x:34,z:80},{x:34,z:220}]){
+  cityBuilding(p.x,p.z,34,16,14,concrete,1);
+  for(const dz of [-9,0,9]){
+    box(scene,[2.4,.15,1.8],[p.x+(p.x<0?7.6:-7.6),2.8,p.z+dz],concrete,.03,2);
+    box(scene,[.12,2.4,1.6],[p.x+(p.x<0?7.0:-7.0),1.2,p.z+dz],mat(0x49372c),.02,1);
+  }
+}
+for(const p of [{x:-68,z:-80},{x:-68,z:-220},{x:70,z:-80},{x:70,z:-220},{x:70,z:80},{x:-70,z:220}])
+  cityBuilding(p.x,p.z,22,28,20,mat(0x9ba2a8),1);
+// Универмаг и кинотеатр «Родина».
+cityBuilding(-30,80,28,8,18,mat(0xaaa89d),0);
+box(scene,[18,2.2,.15],[-15.8,6.2,80],mat(0xa51c1c),.04,2);
+box(scene,[32,12,22],[-34,6,-134],brick,.08,3);
+box(scene,[20,2.2,.15],[-17.8,8.5,-134],mat(0x234e80),.04,2);
+// Советская АЗС №42 с навесом, колонками и кассой.
+const stationX=-44, stationZ=20;
+box(scene,[36,.12,44],[stationX,.06,stationZ],concrete,.03,2);
+box(scene,[28,.65,22],[stationX,5.2,stationZ],mat(0x273a49,.35,.4),.08,3);
+box(scene,[17,1.7,.12],[stationX,5.2,stationZ+11.1],mat(0xa51c1c),.03,2);
+for(const x of [-53,-35]) for(const z of [14,26])
+  mesh(new THREE.CylinderGeometry(.35,.35,5.2,12),mat(0x33414a,.5,.4),scene,[x,2.6,z]);
+for(const z of [16.5,23.5]){
+  box(scene,[.85,1.7,1.0],[stationX,1.0,z],mat(0xb52626),.08,3);
+  box(scene,[.58,.55,.07],[stationX,.99,z-.53],mat(0xd9d6c7),.02,2);
+  tube(scene,[[stationX+.4,1.6,z],[stationX+.9,1.8,z+.4],[stationX+1.1,.35,z+.7]],.035,black);
+}
+box(scene,[8,3.6,6],[stationX-14,1.8,stationZ],mat(0x283c4b),.06,3);
+box(scene,[6,.8,.08],[stationX-14,2.5,stationZ-3.05],mat(0x9c2525),.02,2);
+// Фонари, берёзы, автобусная остановка и таксофон.
+for(let z=-280;z<=280;z+=55){
+  if([-160,0,160].some(v=>Math.abs(z-v)<15)) continue;
+  for(const side of [-1,1]){
+    const x=side*11.2;
+    mesh(new THREE.CylinderGeometry(.12,.16,8.5,10),mat(0x70777b,.55,.4),scene,[x,4.25,z]);
+    tube(scene,[[x,8.1,z],[x-side*.8,8.35,z],[x-side*1.8,8.1,z]],.055,chrome);
+    sphere(scene,[x-side*1.8,8.05,z],[.2,.12,.25],mat(0xffdba0,.1,.25,{emissive:0x6c4c20}));
+  }
+}
+for(let z=-260;z<=260;z+=35){
+  if([-160,0,160].some(v=>Math.abs(z-v)<20)) continue;
+  for(const side of [-1,1]){
+    const x=side*14.5;
+    mesh(new THREE.CylinderGeometry(.22,.28,4.2,10),mat(0xe7e9e7),scene,[x,2.1,z]);
+    mesh(new THREE.ConeGeometry(2.4,6.2,10),mat(0x486b32),scene,[x,5.8,z]);
+  }
+}
+box(scene,[6.4,2.8,2.6],[11.8,1.5,-45],mat(0x315d82),.06,3);
+box(scene,[5.8,2.2,.05],[11.8,1.5,-43.68],glass,.02,2);
+box(scene,[.9,2.2,.9],[-11.5,1.2,35],mat(0xb62222),.04,3);
+// Светофоры на трёх перекрёстках.
+for(const z of [-160,0,160]) for(const x of [-9.5,9.5]){
+  mesh(new THREE.CylinderGeometry(.1,.12,5.2,8),mat(0x555b60),scene,[x,2.6,z+(x<0?-9:9)]);
+  box(scene,[.44,1.35,.44],[x,4.4,z+(x<0?-9:9)],mat(0x202326),.05,2);
+  for(let i=0;i<3;i++) sphere(scene,[x,4.78-i*.38,z+(x<0?-8.75:8.75)],[.13,.13,.08],mat([0xb51f1f,0xb58a22,0x1e8b4b][i],0,.3,{emissive:[0x310000,0x302000,0x003010][i]}));
+}
+//
 
 // Volga GAZ-24-10: dimensions are a stylised near-scale approximation.
 const car = new THREE.Group(); scene.add(car);
@@ -317,6 +388,19 @@ for(const s of [-1,1]) for(const z of [-1.48,1.48]){
   wheels.push({group:wheel,pivot:steeringPivot,front:z<0,side:s});
 }
 
+// Boot inventory: one full 5 L can, one empty 5 L can and the hand-crank starter rod.
+const inventoryProps = new THREE.Group(); car.add(inventoryProps);
+function makeJerryCan(x,z,color){
+  const can=new THREE.Group(); inventoryProps.add(can); can.position.set(x,1.48,z);
+  box(can,[.32,.52,.19],[0,0,0],mat(color,.15,.48),.035,3);
+  box(can,[.18,.08,.08],[0,.31,0],chrome,.02,2);
+  box(can,[.13,.12,.08],[.18,.18,0],mat(0x242729),.02,2);
+  return can;
+}
+const fullCanModel=makeJerryCan(-.38,1.72,0x9b2924);
+const emptyCanModel=makeJerryCan(.38,1.72,0x8b8e8b);
+const starterRod=mesh(new THREE.CylinderGeometry(.025,.025,.85,8),chrome,inventoryProps,[0,1.65,1.95],[0,0,Math.PI/2]);
+
 // Exhaust tail pipe.
 tube(body,[[.45,.45,1.65],[.45,.32,1.95],[.45,.3,2.28],[.45,.3,2.48]],.035,darkChrome);
 
@@ -329,66 +413,82 @@ const keys=new Set();
 let cameraMode=0, speed=0, heading=0, steering=0, rpm=850, gear=0;
 let engineOn=true, handbrake=false, steerAngle=0;
 let verticalBounce=0, roll=0, pitch=0;
+let isOnFoot=false, starterHold=0, stallCountdown=85+Math.random()*55;
+let fuelLiters=38, fullCanLiters=5, emptyCanLiters=0, canisterCapacity=5;
+let mileageKm=42150, fuelFlow=0;
+let gameTime=0, promptText='';
 let toastTimer;
-function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),1800)}
+function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200)}
 function setCameraMode(){cameraMode=(cameraMode+1)%4;notify(['КАМЕРА: СЗАДИ','КАМЕРА: КАПОТ','КАМЕРА: САЛОН','КАМЕРА: СВЕРХУ'][cameraMode])}
-function resetCar(){car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=850;gear=0;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА НА ДОРОГУ')}
+function resetCar(){car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=850;gear=0;engineOn=true;isOnFoot=false;player.visible=false;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА НА ПРОСПЕКТ')}
+const player=new THREE.Group(); scene.add(player);
+const playerBody=mesh(new THREE.CapsuleGeometry(.28,.82,4,8),mat(0x303c4a),player,[0,.88,0]);
+const playerHead=sphere(player,[0,1.55,0],[.23,.25,.23],mat(0xc69b78));
+const playerLegL=mesh(new THREE.CylinderGeometry(.09,.1,.65,8),mat(0x252a30),player,[-.13,.34,0]);
+const playerLegR=mesh(new THREE.CylinderGeometry(.09,.1,.65,8),mat(0x252a30),player,[.13,.34,0]);
+player.visible=false;
+const prompt=$('gamePrompt');
+function updatePrompt(text){if(prompt)prompt.textContent=text;}
+function worldPoint(localX,localZ){
+  const a=heading+Math.PI;
+  return new THREE.Vector3(car.position.x+localX*Math.cos(a)+localZ*Math.sin(a),0,car.position.z-localX*Math.sin(a)+localZ*Math.cos(a));
+}
+function exitCar(){
+  if(Math.abs(speed)>1.2){notify('СНАЧАЛА ОСТАНОВИ ВОЛГУ');return;}
+  const p=worldPoint(-1.65,.15); player.position.copy(p); player.rotation.y=heading;
+  player.visible=true; isOnFoot=true; speed=0; notify('ТЫ ВЫШЕЛ ИЗ МАШИНЫ · E У ДВЕРИ — СЕСТЬ');
+}
+function enterCar(){
+  if(Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)>3.0)return;
+  isOnFoot=false;player.visible=false;starterHold=0;notify('ТЫ СЕЛ В ВОЛГУ');
+}
+function inStation(x,z){return Math.abs(x-stationX)<9 && Math.abs(z-stationZ)<11;}
+function refuelAtStation(){
+  if(!inStation(car.position.x,car.position.z)){notify('ПОДЪЕДЬ К КОЛОНКЕ АЗС');return;}
+  if(engineOn){notify('ЗАГЛУШИ ДВИГАТЕЛЬ ПЕРЕД ЗАПРАВКОЙ');return;}
+  const before=fuelLiters;
+  fuelLiters=55;
+  fullCanLiters=5;
+  emptyCanLiters=5;
+  notify('АЗС: БАК + КАНИСТРЫ ЗАПРАВЛЕНЫ');
+}
+function pourCanIntoTank(){
+  if(Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)>3.4){notify('ПОДОЙДИ К БАГАЖНИКУ');return;}
+  if(fullCanLiters<=0){notify('ПОЛНАЯ КАНИСТРА ПУСТА');return;}
+  const amount=Math.min(fullCanLiters,55-fuelLiters);
+  fuelLiters+=amount;fullCanLiters-=amount;
+  notify('В БАК ЗАЛИТО '+amount.toFixed(1)+' Л');
+}
+function shiftGear(next){
+  if(!keys.has('KeyC') && gear!==0){notify('ВЫЖМИ СЦЕПЛЕНИЕ: C');return;}
+  if(Math.abs(speed)>1.5 && next===-1){notify('ЗАДНЮЮ ВКЛЮЧАЙ ПОСЛЕ ОСТАНОВКИ');return;}
+  gear=THREE.MathUtils.clamp(next,-1,4);
+  notify('ПЕРЕДАЧА: '+(gear===-1?'R':gear===0?'N':gear));
+}
 addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   keys.add(e.code);
-  if(e.code==='KeyC'&&!e.repeat)setCameraMode();
+  if(e.code==='KeyC'&&!e.repeat&&!isOnFoot)setCameraMode();
   if(e.code==='KeyR'&&!e.repeat)resetCar();
-  if(e.code==='KeyE'&&!e.repeat){engineOn=!engineOn;notify(engineOn?'ДВИГАТЕЛЬ ЗАПУЩЕН':'ДВИГАТЕЛЬ ЗАГЛУШЕН')}
+  if(e.code==='KeyE'&&!e.repeat){
+    if(!isOnFoot)exitCar();
+    else if(Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)<3.0)enterCar();
+  }
+  if(!isOnFoot&&!e.repeat){
+    if(e.code==='Digit0')shiftGear(0);
+    if(e.code==='Digit1')shiftGear(1);
+    if(e.code==='Digit2')shiftGear(2);
+    if(e.code==='Digit3')shiftGear(3);
+    if(e.code==='Digit4')shiftGear(4);
+    if(e.code==='KeyX')shiftGear(-1);
+    if(e.code==='ShiftLeft'||e.code==='ShiftRight')shiftGear(Math.min(4,Math.max(1,gear+1)));
+    if(e.code==='ControlLeft'||e.code==='ControlRight')shiftGear(Math.max(-1,gear-1));
+    if(e.code==='KeyF'&&isOnFoot)pourCanIntoTank();
+    if(e.code==='KeyR'&&!isOnFoot)refuelAtStation();
+  }
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>keys.clear());
-// Selectable control layout. Storage is optional: the switch must work even
-// when the browser blocks localStorage (private mode / restrictive settings).
-const controlModeButton = $('controlModeButton');
-function readControlMode(){
-  try { return localStorage.getItem('volga-control-mode'); }
-  catch (_) { return null; }
-}
-function saveControlMode(mode){
-  try { localStorage.setItem('volga-control-mode-v2', mode); }
-  catch (_) { /* Keep the current mode for this page session. */ }
-}
-function setControlMode(mode, announce = false){
-  document.body.dataset.controlMode = mode;
-  controlModeButton.textContent = mode === 'tablet' ? 'РЕЖИМ: ПЛАНШЕТ' : 'РЕЖИМ: ПК';
-  controlModeButton.setAttribute('aria-pressed', String(mode === 'tablet'));
-  saveControlMode(mode);
-  if(announce) notify(mode === 'tablet' ? 'ВКЛЮЧЕНО СЕНСОРНОЕ УПРАВЛЕНИЕ' : 'ВКЛЮЧЕНО УПРАВЛЕНИЕ С КЛАВИАТУРЫ');
-}
-function toggleControlMode(event){
-  event.preventDefault();
-  event.stopPropagation();
-  const nextMode = document.body.dataset.controlMode === 'tablet' ? 'pc' : 'tablet';
-  setControlMode(nextMode, true);
-}
-// Pointer events cover touchscreens and mouse; click remains as a keyboard fallback.
-controlModeButton.addEventListener('pointerup', toggleControlMode);
-controlModeButton.addEventListener('click', (event)=>{
-  if(event.detail === 0) toggleControlMode(event);
-});
-// Tablet controls are the default on every fresh installation.
-// Use a versioned key so an old saved "PC" choice cannot override this update.
-const savedControlMode = (() => {
-  try { return localStorage.getItem('volga-control-mode-v2'); }
-  catch (_) { return null; }
-})();
-const initialControlMode = savedControlMode === 'pc' ? 'pc' : 'tablet';
-setControlMode(initialControlMode);
-$('cameraButton').addEventListener('click',setCameraMode);
-document.querySelectorAll('[data-key]').forEach(button=>{
-  const code=button.dataset.key;
-  const down=e=>{e.preventDefault();keys.add(code);button.setPointerCapture?.(e.pointerId)};
-  const up=e=>{e.preventDefault();keys.delete(code)};
-  button.addEventListener('pointerdown',down);
-  button.addEventListener('pointerup',up);
-  button.addEventListener('pointercancel',up);
-  button.addEventListener('lostpointercapture',up);
-});
 
 // Procedural engine audio. Browsers unlock sound after the first user gesture.
 let audioContext=null, engineOsc=null, engineHarmonic=null, engineFilter=null, engineGain=null;
@@ -423,88 +523,108 @@ function smooth(current,target,rate,dt){return THREE.MathUtils.damp(current,targ
 function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.035);
-  const throttle=engineOn&&(keys.has('KeyW')||keys.has('ArrowUp'));
-  const brake=keys.has('KeyS')||keys.has('ArrowDown');
-  const left=keys.has('KeyA')||keys.has('ArrowLeft');
-  const right=keys.has('KeyD')||keys.has('ArrowRight');
-  handbrake=keys.has('Space');
-  const absSpeed=Math.abs(speed);
-  const steerTarget=(left?1:0)-(right?1:0);
-  steering=smooth(steering,steerTarget,5.5,dt);
-  steerAngle=steering*.30;
-
-  // Approximate 2.4-litre petrol engine, 4-speed manual ratios with automatic shifting for playability.
-  const targetGear=absSpeed<.35?0:absSpeed<5.2?1:absSpeed<10.5?2:absSpeed<17?3:absSpeed<25?4:5;
-  if(speed>=0)gear=targetGear;
-  const ratio=gearRatios[Math.max(0,gear)];
-  const wheelRpm=absSpeed/(.49*2*Math.PI)*60;
-  const targetRpm=engineOn?THREE.MathUtils.clamp(850+wheelRpm*ratio*3.25,850,5200):0;
-  rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
-  const torqueFactor=THREE.MathUtils.clamp(1-Math.abs(rpm-2600)/4200,.35,1);
-  const driveAcceleration=throttle?(gear===0?2.15:4.3*torqueFactor):0;
-  const braking=brake?(speed>0?8.5:4.0):0;
-  speed+=driveAcceleration*dt;
-  if(brake)speed-=Math.sign(speed||1)*braking*dt;
-  if(handbrake)speed-=Math.sign(speed||1)*Math.min(absSpeed*4,12)*dt;
-  if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,0.52)*dt;
-  speed=THREE.MathUtils.clamp(speed,-3.2,maxSpeed);
-  if(speed<-.15)gear=-1; else if(absSpeed<.18&&!throttle)gear=0;
-
-  const steeringAuthority=THREE.MathUtils.clamp(absSpeed/2.5,0,1);
-  const yawRate=(speed/(2.65))*Math.tan(steerAngle)*.72;
-  heading+=yawRate*dt;
-  forward.set(-Math.sin(heading),0,-Math.cos(heading));
-  car.position.addScaledVector(forward,speed*dt);
-  car.rotation.y=heading;
-  const accelVisual=throttle?-.018:brake?.025:0;
-  pitch=smooth(pitch,accelVisual,4,dt);
-  roll=smooth(roll,-steering*steeringAuthority*.035,3,dt);
-  verticalBounce=smooth(verticalBounce,Math.sin(clock.elapsedTime*9)*Math.min(absSpeed/30,.025),5,dt);
-  body.position.y=.0+verticalBounce;
-  body.rotation.z=roll;
-  body.rotation.x=pitch;
-  steeringWheel.rotation.z=-steering*.48;
-  wheels.forEach(w=>{
-    w.group.rotation.x-=speed*dt/.49;
-    if(w.front)w.pivot.rotation.y=steerAngle;
-  });
-  shadow.position.set(car.position.x,-.025,car.position.z);
-
-  // Four camera views: chase, bonnet, cabin and high-angle.
-  const sin=Math.sin(heading), cos=Math.cos(heading);
-  if(cameraMode===0){
-    desiredCamera.set(car.position.x+sin*8.8,4.0,car.position.z+cos*8.8);
-    targetLook.set(car.position.x,1.05,car.position.z);
-  }else if(cameraMode===1){
-    desiredCamera.set(car.position.x-sin*.18,2.0,car.position.z-cos*1.15);
-    targetLook.set(car.position.x-sin*15,1.6,car.position.z-cos*16);
-  }else if(cameraMode===2){
-    desiredCamera.set(car.position.x-sin*.42,1.72,car.position.z-cos*.1);
-    targetLook.set(car.position.x-sin*12,1.65,car.position.z-cos*12);
+  gameTime+=dt;
+  if(!isOnFoot){
+    const throttle=engineOn&&(keys.has('KeyW')||keys.has('ArrowUp'));
+    const brake=keys.has('KeyS')||keys.has('ArrowDown');
+    const left=keys.has('KeyA')||keys.has('ArrowLeft');
+    const right=keys.has('KeyD')||keys.has('ArrowRight');
+    handbrake=keys.has('Space');
+    const absSpeed=Math.abs(speed);
+    const steerTarget=(left?1:0)-(right?1:0);
+    steering=smooth(steering,steerTarget,5.5,dt);
+    steerAngle=steering*.30;
+    const clutch=keys.has('KeyC');
+    const gearRatio=gear===-1?3.2:([0,0,3.54,2.26,1.45,1.0][gear]||0);
+    const direction=gear===-1?-1:1;
+    const gearTop=[0,0,11,19,30,43][gear]||0;
+    const drive=throttle&&engineOn&&gear!==0&&!clutch&&absSpeed<gearTop?direction*(gear===1?3.4:gear===2?2.5:gear===3?1.8:gear===4?1.25:2.5):0;
+    speed+=drive*dt;
+    if(brake)speed-=Math.sign(speed||1)*9*dt;
+    if(handbrake)speed-=Math.sign(speed||1)*Math.min(absSpeed*4,12)*dt;
+    if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,.48)*dt;
+    speed=THREE.MathUtils.clamp(speed,-(gear===-1?5:0),gearTop||0);
+    const targetRpm=engineOn?(gear===0||clutch?850+(throttle?Math.min(3900,Math.abs(speed)*100):0):THREE.MathUtils.clamp(850+absSpeed*gearRatio*24,850,4800)):0;
+    rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
+    if(engineOn){
+      stallCountdown-=dt;
+      if(stallCountdown<=0){
+        engineOn=false;speed*=.98;rpm=0;starterHold=0;
+        notify('ДВИГАТЕЛЬ ЗАГЛОХ! ВЫЙДИ И ЗАВЕДИ РУЧКОЙ');
+        stallCountdown=85+Math.random()*85;
+      }
+      fuelFlow=.00022+(absSpeed/3.6)*11.5/3600;
+      fuelLiters=Math.max(0,fuelLiters-fuelFlow*dt);
+      mileageKm+=absSpeed*dt/1000;
+      if(fuelLiters<=0){engineOn=false;notify('БЕНЗИН ЗАКОНЧИЛСЯ! НУЖНА КАНИСТРА ИЛИ АЗС');}
+    }else{rpm=smooth(rpm,0,4,dt);}
+    heading+=(speed/2.65)*Math.tan(steerAngle)*.72*dt;
+    forward.set(-Math.sin(heading),0,-Math.cos(heading));
+    car.position.addScaledVector(forward,speed*dt);
+    car.rotation.y=heading;
+    pitch=smooth(pitch,throttle?-.018:brake?.025:0,4,dt);
+    roll=smooth(roll,-steering*THREE.MathUtils.clamp(absSpeed/2.5,0,1)*.035,3,dt);
+    verticalBounce=smooth(verticalBounce,Math.sin(clock.elapsedTime*9)*Math.min(absSpeed/30,.025),5,dt);
+    body.position.y=verticalBounce;body.rotation.z=roll;body.rotation.x=pitch;
+    steeringWheel.rotation.z=-steering*.48;
+    wheels.forEach(w=>{w.group.rotation.x-=speed*dt/.49;if(w.front)w.pivot.rotation.y=steerAngle;});
+    shadow.position.set(car.position.x,-.025,car.position.z);
+    const sin=Math.sin(heading),cos=Math.cos(heading);
+    if(cameraMode===0){desiredCamera.set(car.position.x+sin*8.8,4,car.position.z+cos*8.8);targetLook.set(car.position.x,1.05,car.position.z);}
+    else if(cameraMode===1){desiredCamera.set(car.position.x-sin*.18,2,car.position.z-cos*1.15);targetLook.set(car.position.x-sin*15,1.6,car.position.z-cos*16);}
+    else if(cameraMode===2){desiredCamera.set(car.position.x-sin*.42,1.72,car.position.z-cos*.1);targetLook.set(car.position.x-sin*12,1.65,car.position.z-cos*12);}
+    else{desiredCamera.set(car.position.x+sin*2,12,car.position.z+cos*2);targetLook.set(car.position.x,0,car.position.z);}
+    camera.position.lerp(desiredCamera,1-Math.exp(-4.2*dt));camera.lookAt(targetLook);
+    const kmh=Math.round(absSpeed*3.6);
+    speedEl.textContent=String(kmh);speedBar.style.width=Math.min(kmh/160*100,100)+'%';
+    rpmEl.textContent=String(Math.round(rpm/10)*10);rpmBar.style.width=Math.min(rpm/5500*100,100)+'%';
+    const shownGear=gear===-1?'R':gear===0?'N':String(gear);
+    gearEl.textContent=shownGear;gearNameEl.textContent=shownGear==='R'?'ЗАДНИЙ ХОД':shownGear==='N'?'НЕЙТРАЛЬ':'ПЕРЕДАЧА';
+    if(audioContext&&engineOsc){
+      const base=Math.max(18,rpm/30);
+      engineOsc.frequency.setTargetAtTime(base,audioContext.currentTime,.08);
+      engineHarmonic.frequency.setTargetAtTime(base*2.02,audioContext.currentTime,.08);
+      engineFilter.frequency.setTargetAtTime(engineOn?170+rpm*.075:90,audioContext.currentTime,.12);
+      engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):.0001,audioContext.currentTime,.16);
+    }
+    const nearStation=inStation(car.position.x,car.position.z);
+    updatePrompt(nearStation?(engineOn?'АЗС: заглуши двигатель (E), затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):'WASD — ехать · C — сцепление/камера · Shift/Ctrl — передачи · 1–4, 0, X — выбор передачи · E — выйти');
   }else{
-    desiredCamera.set(car.position.x+sin*2,12,car.position.z+cos*2);
-    targetLook.set(car.position.x,0,car.position.z);
+    const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
+    const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
+    const run=keys.has('ShiftLeft')||keys.has('ShiftRight');
+    const moveSpeed=run?5.2:2.6;
+    const fx=-Math.sin(player.rotation.y),fz=-Math.cos(player.rotation.y);
+    const rx=Math.cos(player.rotation.y),rz=-Math.sin(player.rotation.y);
+    const mx=fx*f+rx*r,mz=fz*f+rz*r,mag=Math.hypot(mx,mz)||1;
+    player.position.x+=mx/mag*moveSpeed*dt*(f||r?1:0);
+    player.position.z+=mz/mag*moveSpeed*dt*(f||r?1:0);
+    if(r)player.rotation.y+=r*dt*1.8;
+    const nearDoor=Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)<3;
+    const front=worldPoint(0,-2.8);
+    const nearFront=Math.hypot(player.position.x-front.x,player.position.z-front.z)<2.1;
+    if(nearFront&&keys.has('KeyE')&&!engineOn){
+      starterHold+=dt;
+      updatePrompt('РУЧКА ЗАВОДА: УДЕРЖИВАЙ E '+Math.min(100,Math.round(starterHold/2.4*100))+'%');
+      if(starterHold>=2.4){
+        if(fuelLiters>0){engineOn=true;rpm=850;starterHold=0;notify('ВОЛГА ЗАВЕЛАСЬ С РУЧКИ!');}
+        else{starterHold=0;notify('НЕТ БЕНЗИНА — СНАЧАЛА ЗАПРАВЬ КАНИСТРУ');}
+      }
+    }else if(!keys.has('KeyE'))starterHold=0;
+    if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
+    else if(!nearFront)updatePrompt('WASD — идти · Shift — бежать · Подойди к передку и удерживай E, чтобы завести ручкой');
+    if(nearFront&&!engineOn&&starterHold===0)updatePrompt('У РАДИАТОРА: удерживай E 2.4 секунды — завести ручкой');
+    camera.position.lerp(new THREE.Vector3(player.position.x+Math.sin(player.rotation.y)*5,3.0,player.position.z+Math.cos(player.rotation.y)*5),1-Math.exp(-5*dt));
+    camera.lookAt(player.position.x,1.25,player.position.z);
+    playerBody.position.y=.88+Math.abs(Math.sin(gameTime*9))*(f||r?.035:0);
+    playerLegL.rotation.x=Math.sin(gameTime*9)*(f||r?.35:0);
+    playerLegR.rotation.x=-Math.sin(gameTime*9)*(f||r?.35:0);
+    const kmh=Math.round(Math.abs(speed)*3.6);speedEl.textContent=String(kmh);
+    rpmEl.textContent=String(Math.round(rpm));gearEl.textContent=gear===-1?'R':gear===0?'N':String(gear);
   }
-  camera.position.lerp(desiredCamera,1-Math.exp(-4.2*dt));
-  camera.lookAt(targetLook);
-
-  const kmh=Math.round(absSpeed*3.6);
-  speedEl.textContent=String(kmh);
-  speedBar.style.width=Math.min(kmh/160*100,100)+'%';
-  rpmEl.textContent=String(Math.round(rpm/10)*10);
-  rpmBar.style.width=Math.min(rpm/5500*100,100)+'%';
-  if(audioContext&&engineOsc){
-    const base=Math.max(18,rpm/30);
-    engineOsc.frequency.setTargetAtTime(base,audioContext.currentTime,.08);
-    engineHarmonic.frequency.setTargetAtTime(base*2.02,audioContext.currentTime,.08);
-    engineFilter.frequency.setTargetAtTime(engineOn?170+rpm*.075:90,audioContext.currentTime,.12);
-    engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):.0001,audioContext.currentTime,.16);
-  }
-  const shownGear=speed<-.2?'R':gear===0?'N':String(gear);
-  gearEl.textContent=shownGear;
-  gearNameEl.textContent=shownGear==='R'?'ЗАДНИЙ ХОД':shownGear==='N'?'НЕЙТРАЛЬ':'ПЕРЕДАЧА';
   renderer.render(scene,camera);
 }
+
 animate();
 setTimeout(()=>{loading.classList.add('hidden');setTimeout(()=>loading.remove(),550)},500);
 
