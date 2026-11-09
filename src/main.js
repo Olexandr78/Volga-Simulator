@@ -95,19 +95,31 @@ for(let z=-300;z<300;z+=9){
 // Боковые улицы, дворы и кварталы.
 for(const x of [-45,45]) mesh(new THREE.PlaneGeometry(12,640),asphalt,scene,[x,-.075,0],[-Math.PI/2,0,0],false);
 for(const z of [-80,-240,80,240]) mesh(new THREE.PlaneGeometry(260,12),asphalt,scene,[0,-.075,z],[-Math.PI/2,0,0],false);
+const panelCanvas=document.createElement('canvas');
+panelCanvas.width=512;panelCanvas.height=512;
+const panelCtx=panelCanvas.getContext('2d');
+panelCtx.fillStyle='#9ba2a8';panelCtx.fillRect(0,0,512,512);
+for(let y=18;y<512;y+=96)for(let x=18;x<512;x+=96){
+  panelCtx.fillStyle='#e2e4e3';panelCtx.fillRect(x,y,58,66);
+  panelCtx.fillStyle='#304555';panelCtx.fillRect(x+4,y+4,50,58);
+  if((x+y)%5===0){panelCtx.fillStyle='#d2b77d';panelCtx.fillRect(x+6,y+6,20,48);}
+  panelCtx.fillStyle='#d8dadd';panelCtx.fillRect(x+28,y+4,3,58);
+  panelCtx.fillRect(x+2,y+30,54,3);
+}
+const panelTexture=new THREE.CanvasTexture(panelCanvas);
+panelTexture.colorSpace=THREE.SRGBColorSpace;
 function cityBuilding(x,z,w,h,d,material,style=0){
-  const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g);
+  const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
   box(g,[w,h,d],[0,h/2,0],material,.08,3);
   box(g,[w+.25,.35,d+.25],[0,h+.16,0],mat(style===1?0x4a4c4d:0x65696a,0,.9),.04,2);
-  const floors=Math.max(2,Math.round(h/3.05));
-  const cols=Math.max(3,Math.floor(w/4));
-  for(let f=0;f<floors;f++) for(let c=0;c<cols;c++){
-    const wx=-w/2+(c+.5)*w/cols, wy=1.15+f*3.02;
-    const wm=((c*7+f*3+Math.round(x+z))%7===0)?windowLit:windowDark;
-    box(g,[1.45,1.65,.07],[wx,wy,-d/2-.045],wm,.025,2);
-    box(g,[.07,1.8,.08],[wx,wy,-d/2-.04],concrete,.01,1);
-    box(g,[1.55,.08,.09],[wx,wy-.88,-d/2-.04],concrete,.01,1);
-    if(style===1) box(g,[.07,1.55,1.25],[w/2+.04,wy,(-d/2)+(c+.5)*d/cols],windowDark,.02,1);
+  const facadeMat=new THREE.MeshStandardMaterial({map:panelTexture,roughness:.82});
+  const front=mesh(new THREE.PlaneGeometry(w-.8,h-.8),facadeMat,g,[0,h/2,-d/2-.045]);
+  const side=mesh(new THREE.PlaneGeometry(d-.8,h-.8),facadeMat,g,[w/2+.045,h/2,0],[0,Math.PI/2,0]);
+  if(style===1){
+    for(const dz of [-d/3,0,d/3]){
+      box(g,[2.4,.15,1.8],[w/2-2.5,2.8,dz],concrete,.03,2);
+      box(g,[.12,2.4,1.5],[w/2-.9,1.2,dz],mat(0x49372c),.02,1);
+    }
   }
   return g;
 }
