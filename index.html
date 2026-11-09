@@ -28,11 +28,13 @@
         <div class="gear-panel"><span class="label">ПЕРЕДАЧА</span><strong id="gear">N</strong><small id="gearName">НЕЙТРАЛЬ</small></div>
         <div class="rpm-panel"><span class="label">ОБОРОТЫ ДВИГАТЕЛЯ</span><div class="rpm-value"><strong id="rpm">850</strong><small>ОБ/МИН</small></div><div class="rpm-track"><i id="rpmBar"></i></div></div>
       </section>
-      <div class="help"><kbd>WASD</kbd> — ЕХАТЬ <i></i> <kbd>C</kbd> — СЦЕПЛЕНИЕ <i></i> <kbd>SHIFT</kbd>/<kbd>CTRL</kbd> — ПЕРЕДАЧИ <i></i> <kbd>1–4</kbd>/<kbd>0</kbd>/<kbd>X</kbd> — ВЫБОР ПЕРЕДАЧИ <i></i> <kbd>I</kbd> — ЗАГЛУШИТЬ <i></i> <kbd>E</kbd> — ВЫЙТИ <i></i> <kbd>R</kbd> — ЗАПРАВКА</div>
+      <div class="help"><kbd>W</kbd> ГАЗ <i></i> <kbd>S</kbd> ТОРМОЗ <i></i> <kbd>A/D</kbd> РУЛЬ <i></i> <kbd>C</kbd> СЦЕПЛЕНИЕ <i></i> <kbd>SHIFT</kbd> ВЫШЕ <i></i> <kbd>CTRL</kbd> НИЖЕ <i></i> <kbd>X</kbd> ЗАДНЯЯ <i></i> <kbd>SPACE</kbd> РУЧНИК <i></i> <kbd>E</kbd> СТАРТЕР / ВЫХОД <i></i> <kbd>I</kbd> ЗАГЛУШИТЬ <i></i> <kbd>R</kbd> АЗС <i></i> <kbd>V</kbd> КАМЕРА</div>
       <div id="gamePrompt" class="game-prompt">WASD — ехать · E — выйти</div>
       <div class="touch-controls">
-        <div class="touch-steer"><button data-key="KeyA">◀</button><button data-key="KeyD">▶</button></div>
-        <div class="touch-pedals"><button data-key="KeyS" class="brake">ТОРМОЗ</button><button data-key="KeyW" class="gas">ГАЗ</button></div><div class="touch-actions"><button data-key="KeyE" class="starter-touch">E · СТАРТЕР / ВЗАИМОДЕЙСТВИЕ</button></div>
+        <div class="touch-steer"><button data-key="KeyA">◀ РУЛЬ</button><button data-key="KeyD">РУЛЬ ▶</button></div>
+        <div class="touch-pedals"><button data-key="KeyS" class="brake">ТОРМОЗ</button><button data-key="KeyW" class="gas">ГАЗ</button></div>
+        <div class="touch-gear"><button data-key="KeyC" class="clutch-touch">СЦЕПЛЕНИЕ</button><button data-key="ShiftLeft">↑ ПЕРЕДАЧА</button><button data-key="ControlLeft">↓ ПЕРЕДАЧА</button><button data-key="KeyX">ЗАДНЯЯ</button><button data-key="Space" class="handbrake-touch">РУЧНИК</button></div>
+        <div class="touch-actions"><button data-key="KeyE" class="starter-touch">E · СТАРТЕР / ВЫХОД</button></div>
       </div>
       <div id="loading"><span></span> СОБИРАЕМ ВОЛГУ…</div>
       <div id="toast" role="status"></div>
