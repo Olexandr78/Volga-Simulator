@@ -533,7 +533,7 @@ function shiftGear(next){
   if(next>=1&&speed<-.4){notify('СНАЧАЛА ОСТАНОВИСЬ ПЕРЕД ВКЛЮЧЕНИЕМ ПЕРЕДАЧИ');return;}
   if(next>=1&&next<gear){
     const ratios=[0,3.54,2.26,1.45,1.0];
-    const estimatedRpm=850+Math.abs(speed)*ratios[next]*72;
+    const estimatedRpm=850+(Math.abs(speed)/.49)*ratios[next]*4.1*60/(Math.PI*2);
     if(estimatedRpm>5200){notify('РАНО ПОНИЖАТЬ — ДВИГАТЕЛЬ ПЕРЕКРУТИТСЯ');return;}
   }
   gear=THREE.MathUtils.clamp(next,-1,4);
@@ -641,7 +641,7 @@ const clock=new THREE.Clock();
 const forward=new THREE.Vector3(), desiredCamera=new THREE.Vector3(), targetLook=new THREE.Vector3();
 const cameraOffset=new THREE.Vector3();
 const gearRatios=[0,3.5,2.26,1.45,1.0,.82];
-const maxSpeed=42; // m/s, approximate road speed cap
+const maxSpeed=42; // 151 km/h approximate GAZ-24-10 road-speed limit
 function smooth(current,target,rate,dt){return THREE.MathUtils.damp(current,target,rate,dt)}
 function animate(){
   requestAnimationFrame(animate);
@@ -668,26 +668,31 @@ function animate(){
     steerAngle=steering*.30;
     const clutchPedal=keys.has('KeyC');
     clutchEngagement=smooth(clutchEngagement,clutchPedal?0:1,clutchPedal?13:2.4,dt);
+    // GAZ-24-10-style longitudinal model: engine torque, 4-speed ratios,
+    // final drive, clutch slip, rolling resistance and aerodynamic drag.
     const gearRatio=gear===-1?3.2:([0,3.54,2.26,1.45,1.0][gear]||0);
+    const finalDrive=4.1, wheelRadius=.49, vehicleMass=1450, drivetrainEfficiency=.84;
     const direction=gear===-1?-1:1;
-    const gearTop=gear===-1?5:([0,11,19,30,43][gear]||0);
-    const torqueByGear=gear===-1?2.0:([0,4.2,2.8,1.9,1.3][gear]||0);
-    const drive=throttle&&engineOn&&gear!==0&&clutchEngagement>.06&&absSpeed<gearTop
-      ?direction*torqueByGear*clutchEngagement:0;
-    speed+=drive*dt;
-    if(brake)speed-=Math.sign(speed||1)*9*dt;
-    if(handbrake)speed-=Math.sign(speed||1)*Math.min(absSpeed*4,12)*dt;
-    const rollingResistance=gear!==0&&clutchEngagement>.8?.72:.48;
-    if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,rollingResistance)*dt;
-    if(gear===-1)speed=THREE.MathUtils.clamp(speed,-5,0);
-    else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,43);
-    else speed=THREE.MathUtils.clamp(speed,-43,43);
+    const roadRpm=850+(absSpeed/wheelRadius)*gearRatio*finalDrive*60/(Math.PI*2);
+    const freeRevRpm=850+(throttle?Math.min(4100,3900):0);
     const targetRpm=engineOn
-      ?(gear===0||clutchEngagement<.18
-        ?850+(throttle?Math.min(3900,Math.abs(speed)*100+2800):0)
-        :THREE.MathUtils.clamp(850+absSpeed*gearRatio*72+(throttle?320:0),850,6000))
+      ?(gear===0||clutchEngagement<.12?freeRevRpm:THREE.MathUtils.lerp(freeRevRpm,Math.max(850,roadRpm),clutchEngagement))
       :0;
-    rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
+    rpm=smooth(rpm,targetRpm,throttle?4.2:6.0,dt);
+    const torqueCurve=.58+.42*Math.exp(-Math.pow((rpm-2650)/1750,2));
+    const engineTorque=engineOn&&throttle?168*torqueCurve:0;
+    const driveAcceleration=gear!==0&&clutchEngagement>.035
+      ?direction*engineTorque*gearRatio*finalDrive*drivetrainEfficiency/(vehicleMass*wheelRadius)*clutchEngagement:0;
+    speed+=driveAcceleration*dt;
+    if(brake)speed-=Math.sign(speed||1)*7.6*dt;
+    if(handbrake)speed-=Math.sign(speed||1)*Math.min(absSpeed*3.2,5.2)*dt;
+    const rollingResistance=.12;
+    const aerodynamicDrag=.00068*speed*absSpeed;
+    if(!throttle||!engineOn)speed-=Math.sign(speed)*(rollingResistance+Math.abs(aerodynamicDrag))*dt;
+    else speed-=aerodynamicDrag*dt;
+    if(gear===-1)speed=THREE.MathUtils.clamp(speed,-7.5,0);
+    else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,42);
+    else speed=THREE.MathUtils.clamp(speed,-42,42);
     // Releasing the clutch in gear without throttle at a standstill stalls the engine.
     if(engineOn&&gear!==0&&clutchEngagement>.84&&absSpeed<.85&&!throttle){
       clutchStallTimer+=dt;
