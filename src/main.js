@@ -556,9 +556,12 @@ addEventListener('keydown',e=>{
     }
   }
   if(!isOnFoot&&!e.repeat){
+    if(e.code==='Digit0')shiftGear(0);
+    if(e.code==='Digit1')shiftGear(1);
+    if(e.code==='Digit2')shiftGear(2);
+    if(e.code==='Digit3')shiftGear(3);
+    if(e.code==='Digit4')shiftGear(4);
     if(e.code==='KeyX')shiftGear(-1);
-    if(e.code==='ShiftLeft'||e.code==='ShiftRight')shiftGear(gear===-1?0:Math.min(4,gear+1));
-    if(e.code==='ControlLeft'||e.code==='ControlRight')shiftGear(Math.max(0,gear-1));
     if(e.code==='KeyF'&&isOnFoot)pourCanIntoTank();
     if(e.code==='KeyR'&&!isOnFoot)refuelAtStation();
   }
