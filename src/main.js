@@ -108,6 +108,30 @@ for(let y=18;y<512;y+=96)for(let x=18;x<512;x+=96){
 }
 const panelTexture=new THREE.CanvasTexture(panelCanvas);
 panelTexture.colorSpace=THREE.SRGBColorSpace;
+const enterableBuildings=[];
+function createRoomInterior(w,d){
+  const room=new THREE.Group();
+  const iw=Math.max(7,w-1.8), id=Math.max(7,d-1.8);
+  const wall=mat(0xb8b09e,0,0.92), floor=mat(0x77736a,0,0.96);
+  box(room,[iw,.16,id],[0,.08,0],floor);
+  box(room,[iw,2.9,.16],[0,1.53,-id/2],wall);
+  box(room,[iw,2.9,.16],[0,1.53,id/2],wall);
+  box(room,[.16,2.9,id],[-iw/2,1.53,0],wall);
+  box(room,[.16,2.9,id],[iw/2,1.53,0],wall);
+  box(room,[iw,.16,id],[0,3.02,0],mat(0xaaa493,0,.95));
+  box(room,[Math.min(3.8,iw*.55),.95,.55],[0,.62,-id*.28],mat(0x765b43,0,.8),.04,2);
+  box(room,[Math.min(3.5,iw*.5),.08,.62],[0,1.12,-id*.28],mat(0x9a8060,0,.72),.025,2);
+  box(room,[1.35,.78,.55],[-iw*.28,.48,id*.22],mat(0x5d5142,0,.9),.05,3);
+  box(room,[1.35,.78,.55],[iw*.28,.48,id*.22],mat(0x5d5142,0,.9),.05,3);
+  box(room,[1.7,.35,.12],[0,.65,id/2-.22],mat(0x9a9b91,0,.8));
+  for(const x of [-.9,.9])sphere(room,[x,2.82,0],[.16,.07,.16],mat(0xffe5b4,.05,.3,{emissive:0x594522}));
+  return room;
+}
+function registerEnterable(exterior,x,z,w,d,name){
+  const interior=createRoomInterior(w,d);
+  interior.position.set(x,0,z);scene.add(interior);interior.visible=false;
+  enterableBuildings.push({exterior,interior,x,z,w,d,name,doorX:x,doorZ:z-d/2-.9});
+}
 function cityBuilding(x,z,w,h,d,material,style=0){
   const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);
   box(g,[w,h,d],[0,h/2,0],material,.08,3);
@@ -121,6 +145,7 @@ function cityBuilding(x,z,w,h,d,material,style=0){
       box(g,[.12,2.4,1.5],[w/2-.9,1.2,dz],mat(0x49372c),.02,1);
     }
   }
+  registerEnterable(g,x,z,w,d,style===1?'ЖИЛОЙ ПОДЪЕЗД':'ОБЩЕСТВЕННОЕ ЗДАНИЕ');
   return g;
 }
 // Пятиэтажные хрущёвки и девятиэтажные панельные дома.
@@ -326,6 +351,7 @@ for(let x=-90;x<105;x+=30){
         box(b,[.055,1.25,1.05],[side*(w/2+.035),y,0],windowMat,.025,2);
       }
     }
+    registerEnterable(b,bx,bz,w,d,'ДОМ №'+(buildingIndex+1));
     buildingIndex++;
   }
 }
@@ -454,6 +480,26 @@ function enterCar(){
   if(Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)>3.0)return;
   isOnFoot=false;player.visible=false;starterHold=0;notify('ТЫ СЕЛ В ВОЛГУ');
 }
+function nearestBuilding(){
+  let best=null,bestDistance=Infinity;
+  for(const b of enterableBuildings){
+    const distance=Math.hypot(player.position.x-b.doorX,player.position.z-b.doorZ);
+    if(distance<2.2&&distance<bestDistance){best=b;bestDistance=distance;}
+  }
+  return best;
+}
+function enterBuilding(b){
+  if(!b)return;
+  activeBuilding=b;b.exterior.visible=false;b.interior.visible=true;
+  player.position.set(b.x,0,b.z);player.rotation.y=0;
+  notify('ТЫ ВОШЁЛ: '+b.name+' · E — ВЫЙТИ');
+}
+function leaveBuilding(){
+  if(!activeBuilding)return;
+  const b=activeBuilding;b.interior.visible=false;b.exterior.visible=true;
+  player.position.set(b.doorX,0,b.doorZ-1.2);activeBuilding=null;
+  notify('ТЫ ВЫШЕЛ НА УЛИЦУ');
+}
 function inStation(x,z){return Math.abs(x-stationX)<9 && Math.abs(z-stationZ)<11;}
 function refuelAtStation(){
   if(!inStation(car.position.x,car.position.z)){notify('ПОДЪЕДЬ К КОЛОНКЕ АЗС');return;}
@@ -484,10 +530,12 @@ addEventListener('keydown',e=>{
   if(e.code==='Backspace'&&!e.repeat)resetCar();
   if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
   if(e.code==='KeyE'&&!e.repeat){
-    if(!isOnFoot)exitCar();
+    if(!isOnFoot){if(engineOn)exitCar();}
+    else if(activeBuilding)leaveBuilding();
     else {
       const door=worldPoint(-1.65,.15);
       if(Math.hypot(player.position.x-door.x,player.position.z-door.z)<1.9)enterCar();
+      else enterBuilding(nearestBuilding());
     }
   }
   if(!isOnFoot&&!e.repeat){
@@ -619,10 +667,11 @@ function animate(){
     player.position.z+=mz/mag*moveSpeed*dt*(f||r?1:0);
     if(r)player.rotation.y+=r*dt*1.8;
     const doorPoint=worldPoint(-1.65,.15);
-    const nearDoor=Math.hypot(player.position.x-doorPoint.x,player.position.z-doorPoint.z)<1.9;
+    const nearDoor=!activeBuilding&&Math.hypot(player.position.x-doorPoint.x,player.position.z-doorPoint.z)<1.9;
+    const nearbyBuilding=!activeBuilding?nearestBuilding():null;
     const front=worldPoint(0,-2.8);
     const nearFront=Math.hypot(player.position.x-front.x,player.position.z-front.z)<2.1;
-    if(nearFront&&keys.has('KeyE')&&!engineOn){
+    if(!activeBuilding&&nearFront&&keys.has('KeyE')&&!engineOn){
       starterRod.visible=false;
       starterHold+=dt;
       updatePrompt('РУЧКА ЗАВОДА: УДЕРЖИВАЙ E '+Math.min(100,Math.round(starterHold/2.4*100))+'%');
@@ -631,7 +680,9 @@ function animate(){
         else{starterHold=0;notify('НЕТ БЕНЗИНА — СНАЧАЛА ЗАПРАВЬ КАНИСТРУ');}
       }
     }else if(!keys.has('KeyE')){starterHold=0;starterRod.visible=true;}
-    if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
+    if(activeBuilding)updatePrompt(activeBuilding.name+' · WASD — ходить · Shift — бежать · E — выйти');
+    else if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
+    else if(nearbyBuilding)updatePrompt('E — войти в '+nearbyBuilding.name);
     else if(!nearFront)updatePrompt('WASD — идти · Shift — бежать · Подойди к передку и удерживай E, чтобы завести ручкой');
     if(nearFront&&!engineOn&&starterHold===0)updatePrompt('У РАДИАТОРА: удерживай E 2.4 секунды — завести ручкой');
     camera.position.lerp(new THREE.Vector3(player.position.x+Math.sin(player.rotation.y)*5,3.0,player.position.z+Math.cos(player.rotation.y)*5),1-Math.exp(-5*dt));
