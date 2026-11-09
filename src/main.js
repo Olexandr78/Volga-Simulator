@@ -449,16 +449,17 @@ shadow.scale.set(1,1.65,1);
 // Controls: keyboard plus touch buttons.
 const keys=new Set();
 let cameraMode=0, speed=0, heading=0, steering=0, rpm=850, gear=0;
-let engineOn=true, handbrake=false, steerAngle=0;
+let engineOn=false, handbrake=false, steerAngle=0;
 let verticalBounce=0, roll=0, pitch=0;
 let isOnFoot=false, starterHold=0, stallCountdown=85+Math.random()*55;
+let activeBuilding=null;
 let fuelLiters=38, fullCanLiters=5, emptyCanLiters=0, canisterCapacity=5;
 let mileageKm=42150, fuelFlow=0;
 let gameTime=0, promptText='';
 let toastTimer;
 function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200)}
 function setCameraMode(){cameraMode=(cameraMode+1)%4;notify(['КАМЕРА: СЗАДИ','КАМЕРА: КАПОТ','КАМЕРА: САЛОН','КАМЕРА: СВЕРХУ'][cameraMode])}
-function resetCar(){car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=850;gear=0;engineOn=true;isOnFoot=false;player.visible=false;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА НА ПРОСПЕКТ')}
+function resetCar(){car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=0;gear=0;engineOn=false;isOnFoot=false;player.visible=false;activeBuilding=null;starterHold=0;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА · ЗАЖМИ E ДЛЯ ЗАПУСКА')}
 const player=new THREE.Group(); scene.add(player);
 const playerBody=mesh(new THREE.CapsuleGeometry(.28,.82,4,8),mat(0x303c4a),player,[0,.88,0]);
 const playerHead=sphere(player,[0,1.55,0],[.23,.25,.23],mat(0xc69b78));
@@ -589,6 +590,15 @@ function animate(){
   const dt=Math.min(clock.getDelta(),.035);
   gameTime+=dt;
   if(!isOnFoot){
+    if(!engineOn&&keys.has('KeyE')){
+      if(gear!==0){starterHold=0;updatePrompt('СТАРТЕР ЗАБЛОКИРОВАН: ВКЛЮЧИ НЕЙТРАЛЬ');}
+      else if(fuelLiters<=0){starterHold=0;updatePrompt('НЕТ БЕНЗИНА — ЗАПРАВЬ БАК');}
+      else{
+        starterHold+=dt;
+        updatePrompt('ЗАПУСК ДВИГАТЕЛЯ: УДЕРЖИВАЙ E · '+Math.min(100,Math.round(starterHold/1.65*100))+'%');
+        if(starterHold>=1.65){engineOn=true;rpm=850;starterHold=0;stallCountdown=85+Math.random()*85;notify('СТАРТЕР ПРОКРУТИЛ ДВИГАТЕЛЬ — ВОЛГА ЗАВЕЛАСЬ');}
+      }
+    }else if(!keys.has('KeyE')&&!engineOn){starterHold=0;}
     const throttle=engineOn&&(keys.has('KeyW')||keys.has('ArrowUp'));
     const brake=keys.has('KeyS')||keys.has('ArrowDown');
     const left=keys.has('KeyA')||keys.has('ArrowLeft');
@@ -654,7 +664,7 @@ function animate(){
       engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):.0001,audioContext.currentTime,.16);
     }
     const nearStation=inStation(car.position.x,car.position.z);
-    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):'WASD — ехать · C — сцепление · Shift/Ctrl — передачи · 1–4 / 0 / X — выбор · I — заглушить · E — выйти')+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
+    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'WASD — ехать · C — сцепление · Shift/Ctrl — передачи · 1–4 / 0 / X — выбор · I — заглушить · E — выйти':'НЕЙТРАЛЬ · УДЕРЖИВАЙ E ДЛЯ ЗАПУСКА СТАРТЕРОМ'))+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
   }else{
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
     const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
@@ -670,7 +680,7 @@ function animate(){
     const nearDoor=!activeBuilding&&Math.hypot(player.position.x-doorPoint.x,player.position.z-doorPoint.z)<1.9;
     const nearbyBuilding=!activeBuilding?nearestBuilding():null;
     const front=worldPoint(0,-2.8);
-    const nearFront=Math.hypot(player.position.x-front.x,player.position.z-front.z)<2.1;
+    const nearFront=!activeBuilding&&Math.hypot(player.position.x-front.x,player.position.z-front.z)<2.1;
     if(!activeBuilding&&nearFront&&keys.has('KeyE')&&!engineOn){
       starterRod.visible=false;
       starterHold+=dt;
