@@ -556,14 +556,14 @@ addEventListener('keydown',e=>{
     }
   }
   if(!isOnFoot&&!e.repeat){
-    if(e.code==='Digit0'||e.code==='KeyN')shiftGear(0);
-    if(e.code==='Digit1')shiftGear(1);
-    if(e.code==='Digit2')shiftGear(2);
-    if(e.code==='Digit3')shiftGear(3);
-    if(e.code==='Digit4')shiftGear(4);
-    if(e.code==='KeyX'||e.code==='KeyR')shiftGear(-1);
+    if(e.code==='Digit0'||e.code==='Numpad0'||e.code==='KeyN')shiftGear(0);
+    if(e.code==='Digit1'||e.code==='Numpad1')shiftGear(1);
+    if(e.code==='Digit2'||e.code==='Numpad2')shiftGear(2);
+    if(e.code==='Digit3'||e.code==='Numpad3')shiftGear(3);
+    if(e.code==='Digit4'||e.code==='Numpad4')shiftGear(4);
+    if(e.code==='KeyX')shiftGear(-1);
     if(e.code==='KeyF'&&isOnFoot)pourCanIntoTank();
-    if(e.code==='KeyT'&&!isOnFoot)refuelAtStation();
+    if(e.code==='KeyR'&&!isOnFoot)refuelAtStation();
   }
 });
 addEventListener('keyup',e=>{
@@ -673,8 +673,8 @@ function pollGamepad(){
   if(justPressed('engineOff')&&!isOnFoot){engineOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
   const raw=gp.axes[steerAxis]||0;
   const steeringAxis=Math.abs(raw)<gamepadDeadzone?0:Math.sign(raw)*(Math.abs(raw)-gamepadDeadzone)/(1-gamepadDeadzone);
-  if(Math.abs(steeringAxis)>.03){keys.add(steeringAxis<0?'KeyA':'KeyD');gamepadVirtualKeys.add(steeringAxis<0?'KeyA':'KeyD');}
-  else{keys.delete('KeyA');keys.delete('KeyD');gamepadVirtualKeys.delete('KeyA');gamepadVirtualKeys.delete('KeyD');}
+  for(const code of ['KeyA','KeyD'])if(gamepadVirtualKeys.has(code)){keys.delete(code);gamepadVirtualKeys.delete(code);}
+  if(Math.abs(steeringAxis)>.03){const code=steeringAxis<0?'KeyA':'KeyD';keys.add(code);gamepadVirtualKeys.add(code);}
   previousGamepadButtons=gp.buttons.map((b,i)=>buttonPressed(gp,i));
 }
 addEventListener('gamepadconnected',e=>{if(gamepadStatus)gamepadStatus.textContent='Подключён: '+e.gamepad.id;notify('ГЕЙМПАД ПОДКЛЮЧЁН');});
