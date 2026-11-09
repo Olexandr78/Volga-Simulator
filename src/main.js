@@ -448,7 +448,7 @@ shadow.scale.set(1,1.65,1);
 
 // Controls: keyboard plus touch buttons.
 const keys=new Set();
-let cameraMode=0, speed=0, heading=0, steering=0, rpm=850, gear=0;
+let cameraMode=0, speed=0, heading=0, steering=0, rpm=0, gear=0;
 let engineOn=false, handbrake=false, steerAngle=0;
 let verticalBounce=0, roll=0, pitch=0;
 let isOnFoot=false, starterHold=0, stallCountdown=85+Math.random()*55;
@@ -675,11 +675,11 @@ function animate(){
     const shownGear=gear===-1?'R':gear===0?'N':String(gear);
     gearEl.textContent=shownGear;gearNameEl.textContent=shownGear==='R'?'ЗАДНИЙ ХОД':shownGear==='N'?'НЕЙТРАЛЬ':'ПЕРЕДАЧА';
     if(audioContext&&engineOsc){
-      const base=Math.max(18,rpm/30);
+      const base=engineOn?Math.max(18,rpm/30):(keys.has('KeyE')?55:18);
       engineOsc.frequency.setTargetAtTime(base,audioContext.currentTime,.08);
       engineHarmonic.frequency.setTargetAtTime(base*2.02,audioContext.currentTime,.08);
       engineFilter.frequency.setTargetAtTime(engineOn?170+rpm*.075:90,audioContext.currentTime,.12);
-      engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):.0001,audioContext.currentTime,.16);
+      engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):(keys.has('KeyE')?.012:.0001),audioContext.currentTime,.16);
     }
     const nearStation=inStation(car.position.x,car.position.z);
     updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'WASD — ехать · C — сцепление · Shift/Ctrl — передачи · 1–4 / 0 / X — выбор · I — заглушить · E — выйти':'НЕЙТРАЛЬ · УДЕРЖИВАЙ E ДЛЯ ЗАПУСКА СТАРТЕРОМ'))+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
@@ -693,6 +693,10 @@ function animate(){
     const mx=fx*f+rx*r,mz=fz*f+rz*r,mag=Math.hypot(mx,mz)||1;
     player.position.x+=mx/mag*moveSpeed*dt*(f||r?1:0);
     player.position.z+=mz/mag*moveSpeed*dt*(f||r?1:0);
+    if(activeBuilding){
+      player.position.x=THREE.MathUtils.clamp(player.position.x,activeBuilding.x-activeBuilding.w/2+1.2,activeBuilding.x+activeBuilding.w/2-1.2);
+      player.position.z=THREE.MathUtils.clamp(player.position.z,activeBuilding.z-activeBuilding.d/2+1.2,activeBuilding.z+activeBuilding.d/2-1.2);
+    }
     if(r)player.rotation.y+=r*dt*1.8;
     const doorPoint=worldPoint(-1.65,.15);
     const nearDoor=!activeBuilding&&Math.hypot(player.position.x-doorPoint.x,player.position.z-doorPoint.z)<1.9;
