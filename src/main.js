@@ -553,6 +553,24 @@ addEventListener('keydown',e=>{
   }
 });
 addEventListener('keyup',e=>keys.delete(e.code));
+document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
+  const code=button.dataset.key;
+  const press=e=>{
+    e.preventDefault();
+    if(!keys.has(code))window.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true}));
+    button.classList.add('pressed');
+  };
+  const release=e=>{
+    e.preventDefault();
+    window.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true}));
+    button.classList.remove('pressed');
+  };
+  button.addEventListener('pointerdown',press);
+  button.addEventListener('pointerup',release);
+  button.addEventListener('pointercancel',release);
+  button.addEventListener('lostpointercapture',release);
+  button.addEventListener('contextmenu',e=>e.preventDefault());
+});
 addEventListener('blur',()=>keys.clear());
 
 // Procedural engine audio. Browsers unlock sound after the first user gesture.
