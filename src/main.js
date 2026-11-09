@@ -531,6 +531,11 @@ function shiftGear(next){
   if(Math.abs(speed)>0.45 && next===-1){notify('ЗАДНЮЮ ВКЛЮЧАЙ ТОЛЬКО ПОСЛЕ ПОЛНОЙ ОСТАНОВКИ');return;}
   if(next===gear)return;
   if(next>=1&&speed<-.4){notify('СНАЧАЛА ОСТАНОВИСЬ ПЕРЕД ВКЛЮЧЕНИЕМ ПЕРЕДАЧИ');return;}
+  if(next>=1&&next<gear){
+    const ratios=[0,3.54,2.26,1.45,1.0];
+    const estimatedRpm=850+Math.abs(speed)*ratios[next]*72;
+    if(estimatedRpm>5200){notify('РАНО ПОНИЖАТЬ — ДВИГАТЕЛЬ ПЕРЕКРУТИТСЯ');return;}
+  }
   gear=THREE.MathUtils.clamp(next,-1,4);
   clutchStallTimer=0;
   notify('КОРОБКА: '+(gear===-1?'ЗАДНЯЯ':gear===0?'НЕЙТРАЛЬ':gear+'-Я ПЕРЕДАЧА'));
@@ -650,12 +655,12 @@ function animate(){
     const rollingResistance=gear!==0&&clutchEngagement>.8?.72:.48;
     if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,rollingResistance)*dt;
     if(gear===-1)speed=THREE.MathUtils.clamp(speed,-5,0);
-    else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,gearTop);
+    else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,43);
     else speed=THREE.MathUtils.clamp(speed,-43,43);
     const targetRpm=engineOn
       ?(gear===0||clutchEngagement<.18
         ?850+(throttle?Math.min(3900,Math.abs(speed)*100+2800):0)
-        :THREE.MathUtils.clamp(850+absSpeed*gearRatio*72+(throttle?320:0),850,5000))
+        :THREE.MathUtils.clamp(850+absSpeed*gearRatio*72+(throttle?320:0),850,6000))
       :0;
     rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
     // Releasing the clutch in gear without throttle at a standstill stalls the engine.
