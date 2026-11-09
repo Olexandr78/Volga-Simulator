@@ -654,8 +654,8 @@ function animate(){
     else speed=THREE.MathUtils.clamp(speed,-43,43);
     const targetRpm=engineOn
       ?(gear===0||clutchEngagement<.18
-        ?850+(throttle?Math.min(3900,Math.abs(speed)*100+900):0)
-        :THREE.MathUtils.clamp(850+absSpeed*gearRatio*24+(throttle?320:0),850,5000))
+        ?850+(throttle?Math.min(3900,Math.abs(speed)*100+2800):0)
+        :THREE.MathUtils.clamp(850+absSpeed*gearRatio*72+(throttle?320:0),850,5000))
       :0;
     rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
     // Releasing the clutch in gear without throttle at a standstill stalls the engine.
@@ -699,7 +699,7 @@ function animate(){
     speedEl.textContent=String(kmh);speedBar.style.width=Math.min(kmh/160*100,100)+'%';
     rpmEl.textContent=String(Math.round(rpm/10)*10);rpmBar.style.width=Math.min(rpm/5500*100,100)+'%';
     const shownGear=gear===-1?'R':gear===0?'N':String(gear);
-    gearEl.textContent=shownGear;gearNameEl.textContent=shownGear==='R'?'ЗАДНИЙ ХОД':shownGear==='N'?'НЕЙТРАЛЬ':'ПЕРЕДАЧА';
+    gearEl.textContent=shownGear;gearNameEl.textContent=shownGear==='R'?'ЗАДНИЙ ХОД':shownGear==='N'?'НЕЙТРАЛЬ':['','ПЕРВАЯ','ВТОРАЯ','ТРЕТЬЯ','ЧЕТВЁРТАЯ'][gear];
     if(audioContext&&engineOsc){
       const base=engineOn?Math.max(18,rpm/30):(keys.has('KeyE')?55:18);
       engineOsc.frequency.setTargetAtTime(base,audioContext.currentTime,.08);
