@@ -470,6 +470,7 @@ addEventListener('keydown',e=>{
   keys.add(e.code);
   if(e.code==='KeyV'&&!e.repeat&&!isOnFoot)setCameraMode();
   if(e.code==='Backspace'&&!e.repeat)resetCar();
+  if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
   if(e.code==='KeyE'&&!e.repeat){
     if(!isOnFoot)exitCar();
     else {
@@ -546,7 +547,9 @@ function animate(){
     if(brake)speed-=Math.sign(speed||1)*9*dt;
     if(handbrake)speed-=Math.sign(speed||1)*Math.min(absSpeed*4,12)*dt;
     if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,.48)*dt;
-    speed=THREE.MathUtils.clamp(speed,-(gear===-1?5:0),gearTop||0);
+    if(gear===-1)speed=THREE.MathUtils.clamp(speed,-5,0);
+    else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,gearTop);
+    else speed=THREE.MathUtils.clamp(speed,-43,43);
     const targetRpm=engineOn?(gear===0||clutch?850+(throttle?Math.min(3900,Math.abs(speed)*100):0):THREE.MathUtils.clamp(850+absSpeed*gearRatio*24,850,4800)):0;
     rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
     if(engineOn){
@@ -591,7 +594,7 @@ function animate(){
       engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):.0001,audioContext.currentTime,.16);
     }
     const nearStation=inStation(car.position.x,car.position.z);
-    updatePrompt(nearStation?(engineOn?'АЗС: заглуши двигатель (E), затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):'WASD — ехать · C — сцепление · V — камера · Shift/Ctrl — передачи · 1–4, 0, X — выбор передачи · E — выйти');
+    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):'WASD — ехать · C — сцепление · Shift/Ctrl — передачи · 1–4 / 0 / X — выбор · I — заглушить · E — выйти')+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
   }else{
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
     const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
