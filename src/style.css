@@ -84,3 +84,7 @@ body[data-control-mode="pc"] .help{display:block}
 
 .game-prompt{position:fixed;z-index:8;left:50%;bottom:18px;transform:translateX(-50%);max-width:min(94vw,760px);padding:10px 16px;border:1px solid #e4d3ad66;border-radius:5px;background:rgba(8,14,18,.88);color:#f2e7ce;font:11px 'Courier New',monospace;text-align:center;pointer-events:none;box-shadow:0 8px 24px #0006}
 body[data-control-mode="tablet"] .game-prompt{bottom:150px}
+
+.touch-actions{display:flex;align-items:end}
+.touch-controls .starter-touch{width:auto;min-width:112px;max-width:150px;height:54px;padding:0 9px;background:#5a5141dd;border-color:#e7d2a0aa;font-size:10px;line-height:1.2}
+.touch-controls button.pressed{filter:brightness(1.45);transform:translateY(1px);box-shadow:0 0 0 2px #e5d0a0aa}
