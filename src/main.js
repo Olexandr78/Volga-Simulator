@@ -430,7 +430,7 @@ player.visible=false;
 const prompt=$('gamePrompt');
 function updatePrompt(text){if(prompt)prompt.textContent=text;}
 function worldPoint(localX,localZ){
-  const a=heading+Math.PI;
+  const a=heading;
   return new THREE.Vector3(car.position.x+localX*Math.cos(a)+localZ*Math.sin(a),0,car.position.z-localX*Math.sin(a)+localZ*Math.cos(a));
 }
 function exitCar(){
@@ -468,11 +468,14 @@ function shiftGear(next){
 addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   keys.add(e.code);
-  if(e.code==='KeyC'&&!e.repeat&&!isOnFoot)setCameraMode();
-  if(e.code==='KeyR'&&!e.repeat)resetCar();
+  if(e.code==='KeyV'&&!e.repeat&&!isOnFoot)setCameraMode();
+  if(e.code==='Backspace'&&!e.repeat)resetCar();
   if(e.code==='KeyE'&&!e.repeat){
     if(!isOnFoot)exitCar();
-    else if(Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)<3.0)enterCar();
+    else {
+      const door=worldPoint(-1.65,.15);
+      if(Math.hypot(player.position.x-door.x,player.position.z-door.z)<1.9)enterCar();
+    }
   }
   if(!isOnFoot&&!e.repeat){
     if(e.code==='Digit0')shiftGear(0);
@@ -537,7 +540,7 @@ function animate(){
     const clutch=keys.has('KeyC');
     const gearRatio=gear===-1?3.2:([0,0,3.54,2.26,1.45,1.0][gear]||0);
     const direction=gear===-1?-1:1;
-    const gearTop=[0,0,11,19,30,43][gear]||0;
+    const gearTop=gear===-1?5:([0,0,11,19,30,43][gear]||0);
     const drive=throttle&&engineOn&&gear!==0&&!clutch&&absSpeed<gearTop?direction*(gear===1?3.4:gear===2?2.5:gear===3?1.8:gear===4?1.25:2.5):0;
     speed+=drive*dt;
     if(brake)speed-=Math.sign(speed||1)*9*dt;
@@ -588,7 +591,7 @@ function animate(){
       engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):.0001,audioContext.currentTime,.16);
     }
     const nearStation=inStation(car.position.x,car.position.z);
-    updatePrompt(nearStation?(engineOn?'АЗС: заглуши двигатель (E), затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):'WASD — ехать · C — сцепление/камера · Shift/Ctrl — передачи · 1–4, 0, X — выбор передачи · E — выйти');
+    updatePrompt(nearStation?(engineOn?'АЗС: заглуши двигатель (E), затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):'WASD — ехать · C — сцепление · V — камера · Shift/Ctrl — передачи · 1–4, 0, X — выбор передачи · E — выйти');
   }else{
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
     const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
@@ -600,25 +603,27 @@ function animate(){
     player.position.x+=mx/mag*moveSpeed*dt*(f||r?1:0);
     player.position.z+=mz/mag*moveSpeed*dt*(f||r?1:0);
     if(r)player.rotation.y+=r*dt*1.8;
-    const nearDoor=Math.hypot(player.position.x-car.position.x,player.position.z-car.position.z)<3;
+    const doorPoint=worldPoint(-1.65,.15);
+    const nearDoor=Math.hypot(player.position.x-doorPoint.x,player.position.z-doorPoint.z)<1.9;
     const front=worldPoint(0,-2.8);
     const nearFront=Math.hypot(player.position.x-front.x,player.position.z-front.z)<2.1;
     if(nearFront&&keys.has('KeyE')&&!engineOn){
+      starterRod.visible=false;
       starterHold+=dt;
       updatePrompt('РУЧКА ЗАВОДА: УДЕРЖИВАЙ E '+Math.min(100,Math.round(starterHold/2.4*100))+'%');
       if(starterHold>=2.4){
-        if(fuelLiters>0){engineOn=true;rpm=850;starterHold=0;notify('ВОЛГА ЗАВЕЛАСЬ С РУЧКИ!');}
+        if(fuelLiters>0){engineOn=true;rpm=850;starterHold=0;starterRod.visible=true;notify('ВОЛГА ЗАВЕЛАСЬ С РУЧКИ!');}
         else{starterHold=0;notify('НЕТ БЕНЗИНА — СНАЧАЛА ЗАПРАВЬ КАНИСТРУ');}
       }
-    }else if(!keys.has('KeyE'))starterHold=0;
+    }else if(!keys.has('KeyE')){starterHold=0;starterRod.visible=true;}
     if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
     else if(!nearFront)updatePrompt('WASD — идти · Shift — бежать · Подойди к передку и удерживай E, чтобы завести ручкой');
     if(nearFront&&!engineOn&&starterHold===0)updatePrompt('У РАДИАТОРА: удерживай E 2.4 секунды — завести ручкой');
     camera.position.lerp(new THREE.Vector3(player.position.x+Math.sin(player.rotation.y)*5,3.0,player.position.z+Math.cos(player.rotation.y)*5),1-Math.exp(-5*dt));
     camera.lookAt(player.position.x,1.25,player.position.z);
-    playerBody.position.y=.88+Math.abs(Math.sin(gameTime*9))*(f||r?.035:0);
-    playerLegL.rotation.x=Math.sin(gameTime*9)*(f||r?.35:0);
-    playerLegR.rotation.x=-Math.sin(gameTime*9)*(f||r?.35:0);
+    playerBody.position.y=.88+Math.abs(Math.sin(gameTime*9))*((f||r)? .035:0);
+    playerLegL.rotation.x=Math.sin(gameTime*9)*((f||r)? .35:0);
+    playerLegR.rotation.x=-Math.sin(gameTime*9)*((f||r)? .35:0);
     const kmh=Math.round(Math.abs(speed)*3.6);speedEl.textContent=String(kmh);
     rpmEl.textContent=String(Math.round(rpm));gearEl.textContent=gear===-1?'R':gear===0?'N':String(gear);
   }
