@@ -141,3 +141,31 @@ body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
   body[data-control-mode="tablet"] .touch-actions .handbrake-touch{width:42px;height:46px;font-size:8px;padding:2px}
   body[data-control-mode="tablet"] .touch-actions .starter-touch{width:90px;height:46px;font-size:8px;padding:2px}
 }
+
+
+/* Gamepad configuration drawer */
+.gamepad-panel{
+  display:none;position:fixed;z-index:10020;top:145px;right:18px;width:min(440px,calc(100vw - 28px));
+  max-height:calc(100vh - 170px);overflow:auto;padding:16px;
+  color:#f3eee2;background:rgba(10,17,22,.97);border:1px solid #d8c7a077;border-radius:8px;
+  box-shadow:0 18px 55px #000b;backdrop-filter:blur(14px)
+}
+.gamepad-panel.open{display:block}
+.gamepad-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;font:12px 'Courier New',monospace;letter-spacing:.08em}
+.gamepad-heading button,.mapping-row button,.gamepad-reset{
+  padding:8px 10px;color:#f4ead4;background:#26343b;border:1px solid #d8c7a077;border-radius:4px;
+  font:10px 'Courier New',monospace;cursor:pointer;touch-action:manipulation
+}
+#gamepadStatus{margin:12px 0;color:#d5caa9;font:10px 'Courier New',monospace}
+.gamepad-mappings{display:grid;gap:5px}
+.mapping-row{display:grid;grid-template-columns:minmax(100px,1fr) 92px 112px;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid #ffffff16;font:10px 'Courier New',monospace}
+.mapping-row kbd{text-align:center;margin:0}
+.mapping-row select,.mapping-row input{width:100%;min-width:0;color:#f4ead4;background:#202d34;border:1px solid #d8c7a077;border-radius:3px;padding:6px}
+.mapping-row output{text-align:right;color:#d8c7a0}
+.gamepad-reset{margin:12px 0;width:100%}
+.gamepad-panel>small{display:block;color:#c4c0b5;font:9px/1.5 'Courier New',monospace}
+@media(max-width:700px){
+  .gamepad-panel{top:125px;right:8px;max-height:calc(100vh - 140px);padding:12px}
+  .mapping-row{grid-template-columns:minmax(80px,1fr) 75px 100px;gap:4px;font-size:9px}
+  .gamepad-heading{font-size:10px}
+}
