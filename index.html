@@ -20,7 +20,7 @@
     <div id="app">
       <header class="topbar">
         <div class="brand"><span class="brand-mark">V</span><div><strong>VOLGA SIMULATOR</strong><small>ГАЗ-24-10 · СЛОНОВАЯ КОСТЬ</small></div></div>
-        <div class="top-actions"><span class="live"><i></i> FREE DRIVE</span><button id="controlModeButton" class="glass-button" type="button">РЕЖИМ: ПК</button><button id="cameraButton" class="glass-button">КАМЕРА <b>V</b></button></div>
+        <div class="top-actions"><span class="live"><i></i> FREE DRIVE</span><button id="controlModeButton" class="glass-button" type="button">РЕЖИМ: ПК</button><button id="gamepadButton" class="glass-button" type="button">ГЕЙМПАД</button><button id="cameraButton" class="glass-button" type="button">КАМЕРА <b>V</b></button></div>
       </header>
       <section class="vehicle-info"><span>ГОРЬКОВСКИЙ АВТОМОБИЛЬНЫЙ ЗАВОД</span><strong>24—10</strong><small>2.4 · БЕНЗИН · ЗАДНИЙ ПРИВОД · 4-СТУПЕНЧАТАЯ МЕХАНИКА</small></section>
       <section class="hud">
@@ -30,6 +30,13 @@
       </section>
       <div class="help"><kbd>W</kbd> ГАЗ <i></i> <kbd>S</kbd> ТОРМОЗ <i></i> <kbd>A/D</kbd> РУЛЬ <i></i> <kbd>C</kbd> СЦЕПЛЕНИЕ <i></i> <kbd>1–4</kbd> ПЕРЕДАЧИ <i></i> <kbd>0</kbd> НЕЙТРАЛЬ <i></i> <kbd>X</kbd> ЗАДНЯЯ <i></i> <kbd>SPACE</kbd> РУЧНИК <i></i> <kbd>E</kbd> УДЕРЖИВАТЬ — СТАРТЕР / КОРОТКО — ВЫХОД <i></i> <kbd>I</kbd> ЗАГЛУШИТЬ <i></i> <kbd>R</kbd> АЗС <i></i> <kbd>V</kbd> КАМЕРА</div>
       <div id="gamePrompt" class="game-prompt">WASD — ехать · E — выйти</div>
+      <section id="gamepadPanel" class="gamepad-panel" aria-label="Настройка геймпада">
+        <div class="gamepad-heading"><strong>НАСТРОЙКА ГЕЙМПАДА</strong><button id="gamepadClose" type="button">ЗАКРЫТЬ ✕</button></div>
+        <p id="gamepadStatus">Геймпад не подключён · подключи контроллер и нажми любую кнопку</p>
+        <div id="gamepadMappings" class="gamepad-mappings"></div>
+        <button id="gamepadReset" class="gamepad-reset" type="button">СБРОСИТЬ МАППИНГ</button>
+        <small>Стандартный профиль: RT — газ, LT — тормоз, X — сцепление, B — ручник, крестовина — передачи. Настройки сохраняются в браузере.</small>
+      </section>
       <div class="touch-controls">
         <div class="touch-steer"><button data-key="KeyA">◀ РУЛЬ</button><button data-key="KeyD">РУЛЬ ▶</button></div>
         <div class="touch-pedals"><button data-key="KeyS" class="brake">ТОРМОЗ</button><button data-key="KeyW" class="gas">ГАЗ</button></div>
