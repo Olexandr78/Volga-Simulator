@@ -566,7 +566,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{
   keys.delete(e.code);
   // A quick E tap exits a stopped car with a dead engine; holding E cranks the starter.
-  if(e.code==='KeyE'&&!isOnFoot&&!engineOn&&starterHold<.25)exitCar();
+  if(e.code==='KeyE'&&!isOnFoot&&!engineOn&&starterHold<1.65)exitCar();
 });
 document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
   const code=button.dataset.key;
