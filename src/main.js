@@ -526,6 +526,7 @@ function pourCanIntoTank(){
   fuelLiters+=amount;fullCanLiters-=amount;
   notify('В БАК ЗАЛИТО '+amount.toFixed(1)+' Л');
 }
+let ePressedInCar=false;
 function shiftGear(next){
   if(!keys.has('KeyC')){notify('ПЕРЕКЛЮЧЕНИЕ НЕВОЗМОЖНО — ВЫЖМИ СЦЕПЛЕНИЕ (C)');return;}
   if(Math.abs(speed)>0.45 && next===-1){notify('ЗАДНЮЮ ВКЛЮЧАЙ ТОЛЬКО ПОСЛЕ ПОЛНОЙ ОСТАНОВКИ');return;}
@@ -547,6 +548,7 @@ addEventListener('keydown',e=>{
   if(e.code==='Backspace'&&!e.repeat)resetCar();
   if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
   if(e.code==='KeyE'&&!e.repeat){
+    ePressedInCar=!isOnFoot;
     if(!isOnFoot){if(engineOn)exitCar();}
     else if(activeBuilding)leaveBuilding();
     else {
@@ -568,7 +570,7 @@ addEventListener('keydown',e=>{
 addEventListener('keydown',e=>{if(e.code==='KeyF'&&!e.repeat&&isOnFoot)pourCanIntoTank();});
 addEventListener('keyup',e=>{
   keys.delete(e.code);
-  if(e.code==='KeyE'&&!isOnFoot&&!engineOn&&starterHold<1.65)exitCar();
+  if(e.code==='KeyE'){if(ePressedInCar&&!isOnFoot&&!engineOn&&starterHold<1.65)exitCar();ePressedInCar=false;}
 });
 document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
   const code=button.dataset.key;
