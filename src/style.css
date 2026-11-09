@@ -110,3 +110,34 @@ body[data-control-mode="tablet"] .game-prompt{bottom:150px}
   body[data-control-mode="tablet"] .touch-gear .clutch-touch{width:54px}
   body[data-control-mode="tablet"] .touch-controls .starter-touch{width:94px;height:46px;font-size:8px;padding:2px}
 }
+
+/* Compact H-pattern shifter and separate clutch/handbrake pedals. */
+.touch-gear{
+  display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(2,54px);
+  gap:5px;align-items:stretch
+}
+.touch-gear button{width:54px;height:54px;padding:0;font-size:13px;font-weight:800}
+.touch-actions{display:flex;gap:5px;align-items:end}
+.touch-actions .clutch-touch{width:72px;height:54px;background:#796747bb;font-size:9px}
+.touch-actions .handbrake-touch{width:54px;height:54px;background:#8d5149aa;font-size:9px}
+.touch-actions .starter-touch{width:140px;height:54px}
+body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
+@media(max-width:700px){
+  body[data-control-mode="tablet"] .hud{bottom:170px}
+  body[data-control-mode="tablet"] .touch-controls{
+    left:7px;right:7px;bottom:10px;display:flex;flex-wrap:wrap;
+    justify-content:space-between;align-items:flex-end;gap:7px
+  }
+  body[data-control-mode="tablet"] .touch-steer,
+  body[data-control-mode="tablet"] .touch-pedals{gap:5px}
+  body[data-control-mode="tablet"] .touch-steer button,
+  body[data-control-mode="tablet"] .touch-pedals button{width:49px;height:46px;font-size:10px}
+  body[data-control-mode="tablet"] .touch-gear{
+    grid-template-columns:repeat(3,40px);grid-template-rows:repeat(2,40px);gap:3px
+  }
+  body[data-control-mode="tablet"] .touch-gear button{width:40px;height:40px;font-size:11px}
+  body[data-control-mode="tablet"] .touch-actions{gap:4px}
+  body[data-control-mode="tablet"] .touch-actions .clutch-touch{width:60px;height:46px;font-size:8px;padding:2px}
+  body[data-control-mode="tablet"] .touch-actions .handbrake-touch{width:42px;height:46px;font-size:8px;padding:2px}
+  body[data-control-mode="tablet"] .touch-actions .starter-touch{width:90px;height:46px;font-size:8px;padding:2px}
+}
