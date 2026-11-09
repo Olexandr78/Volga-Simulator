@@ -562,10 +562,10 @@ addEventListener('keydown',e=>{
     if(e.code==='Digit3'||e.code==='Numpad3')shiftGear(3);
     if(e.code==='Digit4'||e.code==='Numpad4')shiftGear(4);
     if(e.code==='KeyX')shiftGear(-1);
-    if(e.code==='KeyF'&&isOnFoot)pourCanIntoTank();
     if(e.code==='KeyR'&&!isOnFoot)refuelAtStation();
   }
 });
+addEventListener('keydown',e=>{if(e.code==='KeyF'&&!e.repeat&&isOnFoot)pourCanIntoTank();});
 addEventListener('keyup',e=>{
   keys.delete(e.code);
   if(e.code==='KeyE'&&!isOnFoot&&!engineOn&&starterHold<1.65)exitCar();
@@ -640,12 +640,12 @@ $('gamepadButton')?.addEventListener('click',()=>{gamepadPanel?.classList.toggle
 $('gamepadClose')?.addEventListener('click',()=>gamepadPanel?.classList.remove('open'));
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gamepadDeadzone=.16;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
 let previousGamepadButtons=[];
-let gamepadVirtualKeys=new Set();
+let gamepadVirtualKeys=new Set(),gamepadSteeringKey=null;
 function buttonPressed(gp,index){const b=gp.buttons[index];return !!b&&(b.pressed||b.value>.55);}
 function pollGamepad(){
   const pads=navigator.getGamepads?navigator.getGamepads():[];
   const gp=Array.from(pads).find(p=>p&&p.connected);
-  if(!gp){if(gamepadStatus)gamepadStatus.textContent='Геймпад не подключён';previousGamepadButtons=[];for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();return;}
+  if(!gp){if(gamepadStatus)gamepadStatus.textContent='Геймпад не подключён';previousGamepadButtons=[];for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}return;}
   if(gamepadStatus)gamepadStatus.textContent='Подключён: '+gp.id;
   if(captureGamepadAction){
     const pressed=gp.buttons.findIndex((b,i)=>buttonPressed(gp,i)&&!previousGamepadButtons[i]);
@@ -673,8 +673,8 @@ function pollGamepad(){
   if(justPressed('engineOff')&&!isOnFoot){engineOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
   const raw=gp.axes[steerAxis]||0;
   const steeringAxis=Math.abs(raw)<gamepadDeadzone?0:Math.sign(raw)*(Math.abs(raw)-gamepadDeadzone)/(1-gamepadDeadzone);
-  for(const code of ['KeyA','KeyD'])if(gamepadVirtualKeys.has(code)){keys.delete(code);gamepadVirtualKeys.delete(code);}
-  if(Math.abs(steeringAxis)>.03){const code=steeringAxis<0?'KeyA':'KeyD';keys.add(code);gamepadVirtualKeys.add(code);}
+  if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
+  if(Math.abs(steeringAxis)>.03){gamepadSteeringKey=steeringAxis<0?'KeyA':'KeyD';keys.add(gamepadSteeringKey);}
   previousGamepadButtons=gp.buttons.map((b,i)=>buttonPressed(gp,i));
 }
 addEventListener('gamepadconnected',e=>{if(gamepadStatus)gamepadStatus.textContent='Подключён: '+e.gamepad.id;notify('ГЕЙМПАД ПОДКЛЮЧЁН');});
