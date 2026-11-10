@@ -631,17 +631,17 @@ addEventListener('blur',()=>{keys.clear();document.querySelectorAll('.touch-cont
 const gamepadDefaults={gas:7,brake:6,clutch:2,handbrake:1,gear1:12,gear2:13,gear3:14,gear4:15,neutral:5,reverse:4,exit:3,camera:9,engineOff:8,ignition:0,choke:10,hood:11,trunk:16};
 const gamepadLabels={gas:'Газ',brake:'Тормоз',clutch:'Сцепление',handbrake:'Ручник',gear1:'1-я передача',gear2:'2-я передача',gear3:'3-я передача',gear4:'4-я передача',neutral:'Нейтраль',reverse:'Задняя',exit:'Сесть / выйти / стартер',camera:'Смена камеры',engineOff:'Заглушить двигатель',ignition:'Зажигание',choke:'Подсос',hood:'Капот',trunk:'Багажник'};
 let gamepadMap={...gamepadDefaults},steerAxis=0,gasAxis=-1,brakeAxis=-1,clutchAxis=-1,gamepadDeadzone=.12,captureGamepadAction=null;
-let selectedGamepadId='';
+let selectedGamepadId='',selectedPedalGamepadId='';
 try{
   const saved=JSON.parse(localStorage.getItem('volga-gamepad-map-v2')||'null');
   if(saved?.buttons)gamepadMap={...gamepadMap,...saved.buttons};
   if(Number.isInteger(saved?.steerAxis))steerAxis=saved.steerAxis;
   for(const k of ['gasAxis','brakeAxis','clutchAxis'])if(Number.isInteger(saved?.[k])){if(k==='gasAxis')gasAxis=saved[k];else if(k==='brakeAxis')brakeAxis=saved[k];else if(k==='clutchAxis')clutchAxis=saved[k];}
   if(Number.isFinite(saved?.deadzone))gamepadDeadzone=THREE.MathUtils.clamp(saved.deadzone,.05,.4);
-  if(typeof saved?.selectedId==='string')selectedGamepadId=saved.selectedId;
+  if(typeof saved?.selectedId==='string')selectedGamepadId=saved.selectedId;if(typeof saved?.pedalId==='string')selectedPedalGamepadId=saved.pedalId;
 }catch{}
-const gamepadStatus=$('gamepadStatus'),gamepadMappings=$('gamepadMappings'),gamepadPanel=$('gamepadPanel'),gamepadDeviceSelect=$('gamepadDevice');
-function saveGamepadMap(){try{localStorage.setItem('volga-gamepad-map-v2',JSON.stringify({buttons:gamepadMap,steerAxis,gasAxis,brakeAxis,clutchAxis,deadzone:gamepadDeadzone,selectedId:selectedGamepadId}));}catch{}}
+const gamepadStatus=$('gamepadStatus'),gamepadMappings=$('gamepadMappings'),gamepadPanel=$('gamepadPanel'),gamepadDeviceSelect=$('gamepadDevice'),gamepadPedalSelect=$('gamepadPedalDevice');
+function saveGamepadMap(){try{localStorage.setItem('volga-gamepad-map-v2',JSON.stringify({buttons:gamepadMap,steerAxis,gasAxis,brakeAxis,clutchAxis,deadzone:gamepadDeadzone,selectedId:selectedGamepadId,pedalId:selectedPedalGamepadId}));}catch{}}
 function renderGamepadMappings(axisCount=8){
   if(!gamepadMappings)return;
   gamepadMappings.innerHTML='';
@@ -672,18 +672,22 @@ function refreshGamepadChoices(){
   if(!gamepadDeviceSelect||!navigator.getGamepads)return;
   const pads=Array.from(navigator.getGamepads()).filter(p=>p&&p.connected);
   const previous=selectedGamepadId;
-  gamepadDeviceSelect.innerHTML='<option value="">— ВЫБЕРИ ПОДКЛЮЧЁННЫЙ КОНТРОЛЛЕР —</option>';
-  pads.forEach(p=>{
-    const option=document.createElement('option');option.value=p.id;option.textContent=p.id+' · слот '+p.index;
-    gamepadDeviceSelect.append(option);
-  });
-  gamepadDeviceSelect.value=pads.some(p=>p.id===previous)?previous:'';
-  if(gamepadDeviceSelect.value!==previous){selectedGamepadId='';saveGamepadMap();}
+  const fillSelect=(select,placeholder,selected)=>{
+    if(!select)return;
+    select.innerHTML='<option value="">'+placeholder+'</option>';
+    pads.forEach(p=>{const option=document.createElement('option');option.value=p.id;option.textContent=p.id+' · слот '+p.index;select.append(option);});
+    select.value=pads.some(p=>p.id===selected)?selected:'';
+  };
+  fillSelect(gamepadDeviceSelect,'— ВЫБЕРИ РУЛЬ / ГЕЙМПАД —',previous);
+  fillSelect(gamepadPedalSelect,'Педали в том же устройстве',selectedPedalGamepadId);
+  if(gamepadDeviceSelect&&!gamepadDeviceSelect.value&&previous){selectedGamepadId='';saveGamepadMap();}
+  if(gamepadPedalSelect&&!gamepadPedalSelect.value&&selectedPedalGamepadId){selectedPedalGamepadId='';saveGamepadMap();}
   if(gamepadStatus&&!pads.length)gamepadStatus.textContent='Контроллеры не обнаружены. Подключи геймпад или руль, затем обнови список.';
 }
 $('gamepadButton')?.addEventListener('click',()=>{gamepadPanel?.classList.toggle('open');refreshGamepadChoices();});
 $('gamepadClose')?.addEventListener('click',()=>gamepadPanel?.classList.remove('open'));
 gamepadDeviceSelect?.addEventListener('change',()=>{selectedGamepadId=gamepadDeviceSelect.value;previousGamepadButtons=[];for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();saveGamepadMap();if(gamepadStatus)gamepadStatus.textContent=selectedGamepadId?'Выбран: '+selectedGamepadId:'Сначала выбери настоящий контроллер';});
+gamepadPedalSelect?.addEventListener('change',()=>{selectedPedalGamepadId=gamepadPedalSelect.value;saveGamepadMap();});
 $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
 let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
@@ -714,11 +718,12 @@ function pollGamepad(dt){
     if(pressed>=0){gamepadMap[captureGamepadAction]=pressed;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings(gp.axes.length);}
     previousGamepadButtons=gp.buttons.map((b,i)=>buttonPressed(gp,i));return;
   }
-  const axisGas=axisPedal(gp,gasAxis),axisBrake=axisPedal(gp,brakeAxis),axisClutch=axisPedal(gp,clutchAxis);
+  const pedalGp=selectedPedalGamepadId?connected.find(p=>p.id===selectedPedalGamepadId):gp;
+  const axisGas=pedalGp?axisPedal(pedalGp,gasAxis):0,axisBrake=pedalGp?axisPedal(pedalGp,brakeAxis):0,axisClutch=pedalGp?axisPedal(pedalGp,clutchAxis):0;
   const nextVirtual=new Set();
-  if(buttonPressed(gp,gamepadMap.gas)||axisGas>.42)nextVirtual.add('KeyW');
-  if(buttonPressed(gp,gamepadMap.brake)||axisBrake>.42)nextVirtual.add('KeyS');
-  if(buttonPressed(gp,gamepadMap.clutch)||axisClutch>.42)nextVirtual.add('KeyC');
+  if(buttonPressed(gp,gamepadMap.gas)||axisGas>.62)nextVirtual.add('KeyW');
+  if(buttonPressed(gp,gamepadMap.brake)||axisBrake>.62)nextVirtual.add('KeyS');
+  if(buttonPressed(gp,gamepadMap.clutch)||axisClutch>.62)nextVirtual.add('KeyC');
   if(buttonPressed(gp,gamepadMap.handbrake))nextVirtual.add('Space');
   for(const code of gamepadVirtualKeys)if(!nextVirtual.has(code))keys.delete(code);
   for(const code of nextVirtual)keys.add(code);
