@@ -900,7 +900,7 @@ function animate(){
       engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):(keys.has('KeyE')?.012:.0001),audioContext.currentTime,.16);
     }
     const nearStation=inStation(car.position.x,car.position.z);
-    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'W — газ · S — тормоз · A/D — руль · C — сцепление · Shift/Ctrl — передачи · H — капот · O — багажник · E — выйти':'K — зажигание · Z — подсос · удерживай E — стартер · W — подгазовать'))+' · '+(ignitionOn?'ЗАЖИГАНИЕ ВКЛ':'ЗАЖИГАНИЕ ВЫКЛ')+' · '+(chokeOn?'ПОДСОС ВЫТЯНУТ':'ПОДСОС УБРАН')+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
+    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'W — газ · S — тормоз · A/D — руль · C — сцепление · Shift/Ctrl — передачи · H — капот · O — багажник · E — выйти':'K — зажигание · Z — подсос · удерживай E — стартер · W — подгазовать'))+' · '+(ignitionOn?'ЗАЖИГАНИЕ ВКЛ':'ЗАЖИГАНИЕ ВЫКЛ')+' · '+('ПОДСОС '+Math.round(chokeAmount*100)+'%')+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
   }else{
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
     const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
