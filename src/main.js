@@ -690,7 +690,7 @@ gamepadDeviceSelect?.addEventListener('change',()=>{selectedGamepadIndex=gamepad
 gamepadPedalSelect?.addEventListener('change',()=>{selectedPedalGamepadIndex=gamepadPedalSelect.value===''?-1:Number(gamepadPedalSelect.value);saveGamepadMap();});
 $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
-let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
+let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;\nlet gamepadGasValue=0,gamepadBrakeValue=0,gamepadClutchValue=0;
 function buttonPressed(gp,index){const b=gp.buttons[index];return !!b&&(b.pressed||b.value>.55);}
 function decodeAxis(setting){return setting>=0?{index:setting,invert:false}:setting<=-2?{index:-setting-2,invert:true}:{index:-1,invert:false};}
 function axisPedal(gp,setting){
@@ -698,7 +698,7 @@ function axisPedal(gp,setting){
   if(cfg.index<0||cfg.index>=gp.axes.length)return 0;
   let value=THREE.MathUtils.clamp((gp.axes[cfg.index]+1)/2,0,1);
   if(cfg.invert)value=1-value;
-  return value;
+  return THREE.MathUtils.clamp((value-.52)/.48,0,1);
 }
 function pollGamepad(dt){
   const pads=navigator.getGamepads?navigator.getGamepads():[];
@@ -707,7 +707,7 @@ function pollGamepad(dt){
   const gp=connected.find(p=>p.index===selectedGamepadIndex);
   if(!gp){
     if(gamepadStatus)gamepadStatus.textContent=connected.length?'Выбери контроллер в списке — клавиатура и мышь не выбираются автоматически':'Контроллер не подключён';
-    previousGamepadButtons=[];
+    previousGamepadButtons=[];gamepadGasValue=gamepadBrakeValue=gamepadClutchValue=0;
     for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();
     if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
     return;
@@ -716,14 +716,16 @@ function pollGamepad(dt){
   if(captureGamepadAction){
     const pressed=gp.buttons.findIndex((b,i)=>buttonPressed(gp,i)&&!previousGamepadButtons[i]);
     if(pressed>=0){gamepadMap[captureGamepadAction]=pressed;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings(gp.axes.length);}
+    gamepadGasValue=gamepadBrakeValue=gamepadClutchValue=0;
     previousGamepadButtons=gp.buttons.map((b,i)=>buttonPressed(gp,i));return;
   }
   const pedalGp=selectedPedalGamepadIndex>=0?connected.find(p=>p.index===selectedPedalGamepadIndex):gp;
   const axisGas=pedalGp?axisPedal(pedalGp,gasAxis):0,axisBrake=pedalGp?axisPedal(pedalGp,brakeAxis):0,axisClutch=pedalGp?axisPedal(pedalGp,clutchAxis):0;
+  gamepadGasValue=axisGas;gamepadBrakeValue=axisBrake;gamepadClutchValue=axisClutch;
   const nextVirtual=new Set();
-  if(buttonPressed(gp,gamepadMap.gas)||axisGas>.62)nextVirtual.add('KeyW');
-  if(buttonPressed(gp,gamepadMap.brake)||axisBrake>.62)nextVirtual.add('KeyS');
-  if(buttonPressed(gp,gamepadMap.clutch)||axisClutch>.62)nextVirtual.add('KeyC');
+  if(buttonPressed(gp,gamepadMap.gas))nextVirtual.add('KeyW');
+  if(buttonPressed(gp,gamepadMap.brake))nextVirtual.add('KeyS');
+  if(buttonPressed(gp,gamepadMap.clutch))nextVirtual.add('KeyC');
   if(buttonPressed(gp,gamepadMap.handbrake))nextVirtual.add('Space');
   for(const code of gamepadVirtualKeys)if(!nextVirtual.has(code))keys.delete(code);
   for(const code of nextVirtual)keys.add(code);
@@ -805,8 +807,12 @@ function animate(){
         }
       }
     }else if(!keys.has('KeyE')&&!engineOn){starterHold=0;}
-    const throttle=engineOn&&(keys.has('KeyW')||keys.has('ArrowUp'));
-    const brake=keys.has('KeyS')||keys.has('ArrowDown');
+    const keyboardThrottle=keys.has('KeyW')||keys.has('ArrowUp');
+    const throttle=engineOn&&(keyboardThrottle||gamepadGasValue>.015);
+    const throttleAmount=keyboardThrottle?1:gamepadGasValue;
+    const keyboardBrake=keys.has('KeyS')||keys.has('ArrowDown');
+    const brake=keyboardBrake||gamepadBrakeValue>.015;
+    const brakeAmount=keyboardBrake?1:gamepadBrakeValue;
     const left=keys.has('KeyA')||keys.has('ArrowLeft');
     const right=keys.has('KeyD')||keys.has('ArrowRight');
     handbrake=keys.has('Space');
@@ -814,16 +820,18 @@ function animate(){
     const steerTarget=(left?1:0)-(right?1:0);
     steering=smooth(steering,steerTarget,5.5,dt);
     steerAngle=steering*.30;
-    const clutchPedal=keys.has('KeyC');
-    clutchEngagement=smooth(clutchEngagement,clutchPedal?0:1,clutchPedal?13:2.4,dt);
+    const keyboardClutch=keys.has('KeyC');
+    const clutchPedal=keyboardClutch||gamepadClutchValue>.015;
+    const clutchTarget=keyboardClutch?0:1-gamepadClutchValue;
+    clutchEngagement=smooth(clutchEngagement,clutchTarget,clutchPedal?13:2.4,dt);
     const gearRatio=gear===-1?3.2:([0,3.54,2.26,1.45,1.0][gear]||0);
     const direction=gear===-1?-1:1;
     const gearTop=gear===-1?5:([0,11,19,30,43][gear]||0);
     const torqueByGear=gear===-1?2.0:([0,4.2,2.8,1.9,1.3][gear]||0);
     const drive=throttle&&engineOn&&gear!==0&&clutchEngagement>.06&&absSpeed<gearTop
-      ?direction*torqueByGear*clutchEngagement:0;
+      ?direction*torqueByGear*clutchEngagement*throttleAmount:0;
     speed+=drive*dt;
-    if(brake)speed-=Math.sign(speed||1)*9*dt;
+    if(brake)speed-=Math.sign(speed||1)*9*brakeAmount*dt;
     if(handbrake)speed-=Math.sign(speed||1)*Math.min(absSpeed*4,12)*dt;
     const rollingResistance=gear!==0&&clutchEngagement>.8?.72:.48;
     if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,rollingResistance)*dt;
