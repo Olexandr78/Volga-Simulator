@@ -690,7 +690,8 @@ gamepadDeviceSelect?.addEventListener('change',()=>{selectedGamepadIndex=gamepad
 gamepadPedalSelect?.addEventListener('change',()=>{selectedPedalGamepadIndex=gamepadPedalSelect.value===''?-1:Number(gamepadPedalSelect.value);saveGamepadMap();});
 $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
-let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;\nlet gamepadGasValue=0,gamepadBrakeValue=0,gamepadClutchValue=0;
+let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
+let gamepadGasValue=0,gamepadBrakeValue=0,gamepadClutchValue=0;
 function buttonPressed(gp,index){const b=gp.buttons[index];return !!b&&(b.pressed||b.value>.55);}
 function decodeAxis(setting){return setting>=0?{index:setting,invert:false}:setting<=-2?{index:-setting-2,invert:true}:{index:-1,invert:false};}
 function axisPedal(gp,setting){
