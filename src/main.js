@@ -589,7 +589,7 @@ addEventListener('keydown',e=>{
 addEventListener('keydown',e=>{if(e.code==='KeyF'&&!e.repeat&&isOnFoot)pourCanIntoTank();});
 addEventListener('keyup',e=>{
   keys.delete(e.code);
-  if(e.code==='KeyE'){if(ePressedInCar&&!isOnFoot&&!engineOn&&starterHold<1.65)exitCar();ePressedInCar=false;}
+  if(e.code==='KeyE'){if(ePressedInCar&&!isOnFoot&&!engineOn&&starterHold<.25)exitCar();ePressedInCar=false;}
 });
 document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
   const code=button.dataset.key;
@@ -782,7 +782,7 @@ function animate(){
   if(!isOnFoot){
     if(!engineOn&&keys.has('KeyE')){
       if(!ignitionOn){starterHold=0;updatePrompt('СНАЧАЛА ВКЛЮЧИ ЗАЖИГАНИЕ: K');}
-      else if(gear!==0){starterHold=0;updatePrompt('СТАРТЕР ЗАБЛОКИРОВАН: ВЫЖМИ СЦЕПЛЕНИЕ И ВКЛЮЧИ НЕЙТРАЛЬ');}
+      else if(gear!==0||!keys.has('KeyC')){starterHold=0;updatePrompt('ВЫЖМИ СЦЕПЛЕНИЕ (C) И УБЕДИСЬ, ЧТО ВКЛЮЧЕНА НЕЙТРАЛЬ');}
       else if(fuelLiters<=0){starterHold=0;updatePrompt('НЕТ БЕНЗИНА — ЗАПРАВЬ БАК');}
       else{
         starterHold+=dt;
