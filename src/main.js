@@ -588,7 +588,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keydown',e=>{if(e.code==='KeyF'&&!e.repeat&&isOnFoot)pourCanIntoTank();});
 addEventListener('keyup',e=>{
-  keys.delete(e.code);
+  physicalKeys.delete(e.code);if(!gamepadVirtualKeys.has(e.code))keys.delete(e.code);
   if(e.code==='KeyE'){if(ePressedInCar&&!isOnFoot&&!engineOn&&starterHold<.25)exitCar();ePressedInCar=false;}
 });
 document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
@@ -709,7 +709,7 @@ function pollGamepad(dt){
   if(!gp){
     if(gamepadStatus)gamepadStatus.textContent=connected.length?'Выбери контроллер в списке — клавиатура и мышь не выбираются автоматически':'Контроллер не подключён';
     previousGamepadButtons=[];gamepadGasValue=gamepadBrakeValue=gamepadClutchValue=0;
-    for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();
+    for(const code of gamepadVirtualKeys)if(!physicalKeys.has(code))keys.delete(code);gamepadVirtualKeys.clear();
     if(gamepadSteeringKey){if(!physicalKeys.has(gamepadSteeringKey))keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
     return;
   }
@@ -749,7 +749,7 @@ function pollGamepad(dt){
   let raw=steerCfg.index>=0?(gp.axes[steerCfg.index]||0):0;
   if(steerCfg.invert)raw=-raw;
   const steeringAxis=Math.abs(raw)<gamepadDeadzone?0:Math.sign(raw)*(Math.abs(raw)-gamepadDeadzone)/(1-gamepadDeadzone);
-  if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
+  if(gamepadSteeringKey){if(!physicalKeys.has(gamepadSteeringKey))keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
   if(Math.abs(steeringAxis)>.03){gamepadSteeringKey=steeringAxis<0?'KeyA':'KeyD';keys.add(gamepadSteeringKey);}
   previousGamepadButtons=gp.buttons.map((b,i)=>buttonPressed(gp,i));
 }
