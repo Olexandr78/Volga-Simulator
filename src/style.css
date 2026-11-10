@@ -169,3 +169,10 @@ body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
   .mapping-row{grid-template-columns:minmax(80px,1fr) 75px 100px;gap:4px;font-size:9px}
   .gamepad-heading{font-size:10px}
 }
+
+.gamepad-device-row{display:grid;grid-template-columns:82px minmax(0,1fr) auto;gap:7px;align-items:center;margin:10px 0 13px;color:#e8dfca;font:10px 'Courier New',monospace}
+.gamepad-device-row select{min-width:0;width:100%;padding:9px;color:#f4ead4;background:#202d34;border:1px solid #d8c7a077;border-radius:3px;font:10px 'Courier New',monospace}
+.gamepad-device-row button{padding:9px 10px;color:#f4ead4;background:#26343b;border:1px solid #d8c7a077;border-radius:4px;font:9px 'Courier New',monospace;cursor:pointer;touch-action:manipulation}
+.gamepad-panel .mapping-row{grid-template-columns:minmax(100px,1fr) minmax(90px,1fr) 112px}
+.gamepad-panel .mapping-row select{font:9px 'Courier New',monospace}
+@media(max-width:700px){.gamepad-device-row{grid-template-columns:1fr;gap:6px}.gamepad-panel .mapping-row{grid-template-columns:minmax(80px,1fr) minmax(85px,1fr) 94px}}
