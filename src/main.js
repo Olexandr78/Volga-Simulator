@@ -463,7 +463,7 @@ const shadow = mesh(new THREE.CircleGeometry(2.15,48),mat(0x171b1a,0,1,{transpar
 shadow.scale.set(1,1.65,1);
 
 // Controls: keyboard plus touch buttons.
-const keys=new Set();
+const keys=new Set(),physicalKeys=new Set();
 let cameraMode=0, speed=0, heading=0, steering=0, rpm=0, gear=0;
 let engineOn=false, ignitionOn=false, chokeOn=false, startRevTimer=0, handbrake=false, steerAngle=0;
 let clutchEngagement=1, clutchStallTimer=0;
@@ -552,7 +552,7 @@ function shiftGear(next){
 }
 addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
-  keys.add(e.code);
+  physicalKeys.add(e.code);keys.add(e.code);
   if(e.code==='KeyV'&&!e.repeat&&!isOnFoot)setCameraMode();
   if(e.code==='Backspace'&&!e.repeat)resetCar();
   if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;ignitionOn=false;rpm=0;startRevTimer=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН · ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
@@ -686,7 +686,7 @@ function refreshGamepadChoices(){
 }
 $('gamepadButton')?.addEventListener('click',()=>{gamepadPanel?.classList.toggle('open');refreshGamepadChoices();});
 $('gamepadClose')?.addEventListener('click',()=>gamepadPanel?.classList.remove('open'));
-gamepadDeviceSelect?.addEventListener('change',()=>{selectedGamepadIndex=gamepadDeviceSelect.value===''?-1:Number(gamepadDeviceSelect.value);previousGamepadButtons=[];for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();saveGamepadMap();if(gamepadStatus)gamepadStatus.textContent=selectedGamepadIndex>=0?'Контроллер выбран':'Сначала выбери настоящий контроллер';});
+gamepadDeviceSelect?.addEventListener('change',()=>{selectedGamepadIndex=gamepadDeviceSelect.value===''?-1:Number(gamepadDeviceSelect.value);previousGamepadButtons=[];for(const code of gamepadVirtualKeys)if(!physicalKeys.has(code))keys.delete(code);gamepadVirtualKeys.clear();saveGamepadMap();if(gamepadStatus)gamepadStatus.textContent=selectedGamepadIndex>=0?'Контроллер выбран':'Сначала выбери настоящий контроллер';});
 gamepadPedalSelect?.addEventListener('change',()=>{selectedPedalGamepadIndex=gamepadPedalSelect.value===''?-1:Number(gamepadPedalSelect.value);saveGamepadMap();});
 $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
@@ -710,7 +710,7 @@ function pollGamepad(dt){
     if(gamepadStatus)gamepadStatus.textContent=connected.length?'Выбери контроллер в списке — клавиатура и мышь не выбираются автоматически':'Контроллер не подключён';
     previousGamepadButtons=[];gamepadGasValue=gamepadBrakeValue=gamepadClutchValue=0;
     for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();
-    if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
+    if(gamepadSteeringKey){if(!physicalKeys.has(gamepadSteeringKey))keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
     return;
   }
   if(gamepadStatus)gamepadStatus.textContent='Выбран: '+gp.id+' · '+gp.buttons.length+' кнопок · '+gp.axes.length+' осей'+(gp.mapping==='standard'?' · стандартная раскладка':' · нестандартная раскладка');
@@ -728,7 +728,7 @@ function pollGamepad(dt){
   if(buttonPressed(gp,gamepadMap.brake))nextVirtual.add('KeyS');
   if(buttonPressed(gp,gamepadMap.clutch))nextVirtual.add('KeyC');
   if(buttonPressed(gp,gamepadMap.handbrake))nextVirtual.add('Space');
-  for(const code of gamepadVirtualKeys)if(!nextVirtual.has(code))keys.delete(code);
+  for(const code of gamepadVirtualKeys)if(!nextVirtual.has(code)&&!physicalKeys.has(code))keys.delete(code);
   for(const code of nextVirtual)keys.add(code);
   gamepadVirtualKeys=nextVirtual;
   const justPressed=action=>buttonPressed(gp,gamepadMap[action])&&!previousGamepadButtons[gamepadMap[action]];
