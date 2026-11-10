@@ -557,7 +557,7 @@ addEventListener('keydown',e=>{
   if(e.code==='Backspace'&&!e.repeat)resetCar();
   if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;ignitionOn=false;rpm=0;startRevTimer=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН · ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
   if(e.code==='KeyK'&&!e.repeat&&!isOnFoot){ignitionOn=!ignitionOn;if(!ignitionOn){engineOn=false;rpm=0;}notify(ignitionOn?'ЗАЖИГАНИЕ ВКЛЮЧЕНО':'ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
-  if(e.code==='KeyZ'&&!e.repeat&&!isOnFoot){chokeOn=!chokeOn;notify(chokeOn?'ПОДСОС ВЫТЯНУТ':'ПОДСОС УБРАН');}
+  if(e.code==='KeyZ'&&!e.repeat&&!isOnFoot){notify('УДЕРЖИВАЙ Z И РЕГУЛИРУЙ ПОДСОС ПЕДАЛЬЮ ГАЗА');}
   if((e.code==='KeyH'||e.code==='KeyO')&&!e.repeat){
     if(Math.abs(speed)>.1){notify('ОСТАНОВИ ВОЛГУ ПЕРЕД ОТКРЫТИЕМ');}
     else if(e.code==='KeyH'){hoodOpen=!hoodOpen;notify(hoodOpen?'КАПОТ ОТКРЫТ':'КАПОТ ЗАКРЫТ');}
@@ -691,7 +691,7 @@ gamepadPedalSelect?.addEventListener('change',()=>{selectedPedalGamepadIndex=gam
 $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
 let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
-let gamepadGasValue=0,gamepadBrakeValue=0,gamepadClutchValue=0;
+let gamepadGasValue=0,gamepadBrakeValue=0,gamepadClutchValue=0,gamepadChokeHeld=false;
 function buttonPressed(gp,index){const b=gp.buttons[index];return !!b&&(b.pressed||b.value>.55);}
 function decodeAxis(setting){return setting>=0?{index:setting,invert:false}:setting<=-2?{index:-setting-2,invert:true}:{index:-1,invert:false};}
 function axisPedal(gp,setting){
@@ -708,7 +708,7 @@ function pollGamepad(dt){
   const gp=connected.find(p=>p.index===selectedGamepadIndex);
   if(!gp){
     if(gamepadStatus)gamepadStatus.textContent=connected.length?'Выбери контроллер в списке — клавиатура и мышь не выбираются автоматически':'Контроллер не подключён';
-    previousGamepadButtons=[];gamepadGasValue=gamepadBrakeValue=gamepadClutchValue=0;
+    previousGamepadButtons=[];gamepadGasValue=gamepadBrakeValue=gamepadClutchValue=0;gamepadChokeHeld=false;
     for(const code of gamepadVirtualKeys)if(!physicalKeys.has(code))keys.delete(code);gamepadVirtualKeys.clear();
     if(gamepadSteeringKey){if(!physicalKeys.has(gamepadSteeringKey))keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
     return;
@@ -737,7 +737,7 @@ function pollGamepad(dt){
     if(justPressed('neutral'))shiftGear(0);
     if(justPressed('reverse'))shiftGear(-1);
     if(justPressed('ignition')){ignitionOn=!ignitionOn;if(!ignitionOn)engineOn=false;notify(ignitionOn?'ЗАЖИГАНИЕ ВКЛЮЧЕНО':'ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
-    if(justPressed('choke')){chokeOn=!chokeOn;notify(chokeOn?'ПОДСОС ВЫТЯНУТ':'ПОДСОС УБРАН');}
+    gamepadChokeHeld=buttonPressed(gp,gamepadMap.choke);
   }
   if(justPressed('hood')&&Math.abs(speed)<.1){hoodOpen=!hoodOpen;notify(hoodOpen?'КАПОТ ОТКРЫТ':'КАПОТ ЗАКРЫТ');}
   if(justPressed('trunk')&&Math.abs(speed)<.1){trunkOpen=!trunkOpen;notify(trunkOpen?'БАГАЖНИК ОТКРЫТ':'БАГАЖНИК ЗАКРЫТ');}
@@ -793,22 +793,25 @@ function animate(){
   hoodHinge.rotation.x=smooth(hoodHinge.rotation.x,hoodOpen?.92:0,5,dt);
   trunkHinge.rotation.x=smooth(trunkHinge.rotation.x,trunkOpen?-.82:0,5,dt);
   if(!isOnFoot){
+    const keyboardThrottle=keys.has('KeyW')||keys.has('ArrowUp');
+    const chokeControlHeld=keys.has('KeyZ')||gamepadChokeHeld;
+    const chokeAmount=chokeControlHeld?1-(keyboardThrottle?1:gamepadGasValue):0;
+    chokeOn=chokeAmount>.05;
     if(!engineOn&&keys.has('KeyE')){
       if(!ignitionOn){starterHold=0;updatePrompt('СНАЧАЛА ВКЛЮЧИ ЗАЖИГАНИЕ: K');}
       else if(gear!==0||!keys.has('KeyC')){starterHold=0;updatePrompt('ВЫЖМИ СЦЕПЛЕНИЕ (C) И УБЕДИСЬ, ЧТО ВКЛЮЧЕНА НЕЙТРАЛЬ');}
       else if(fuelLiters<=0){starterHold=0;updatePrompt('НЕТ БЕНЗИНА — ЗАПРАВЬ БАК');}
       else{
         starterHold+=dt;
-        const crankNeed=chokeOn?1.25:(keys.has('KeyW')?1.75:2.6);
+        const crankNeed=2.6-1.35*chokeAmount;
         rpm=smooth(rpm,180+(keys.has('KeyW')?100:0),7,dt);
-        updatePrompt('СТАРТЕР КРУТИТ · '+(chokeOn?'ПОДСОС ВЫТЯНУТ':'ПОДСОС НЕ ВЫТЯНУТ')+' · '+Math.min(100,Math.round(starterHold/crankNeed*100))+'%');
+        updatePrompt('СТАРТЕР КРУТИТ · ПОДСОС '+Math.round(chokeAmount*100)+'% · '+Math.min(100,Math.round(starterHold/crankNeed*100))+'%');
         if(starterHold>=crankNeed){
           engineOn=true;rpm=1550;startRevTimer=3.2;starterHold=0;stallCountdown=85+Math.random()*85;
           notify('ВОЛГА ЗАВЕЛАСЬ · ДВИГАТЕЛЬ ПРОГРЕВАЕТСЯ');
         }
       }
     }else if(!keys.has('KeyE')&&!engineOn){starterHold=0;}
-    const keyboardThrottle=keys.has('KeyW')||keys.has('ArrowUp');
     const throttle=engineOn&&(keyboardThrottle||gamepadGasValue>.015);
     const throttleAmount=keyboardThrottle?1:gamepadGasValue;
     const keyboardBrake=keys.has('KeyS')||keys.has('ArrowDown');
