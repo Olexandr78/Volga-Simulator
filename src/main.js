@@ -628,7 +628,7 @@ $('cameraButton')?.addEventListener('click',setCameraMode);
 addEventListener('blur',()=>{keys.clear();document.querySelectorAll('.touch-controls button.pressed').forEach(b=>b.classList.remove('pressed'));});
 
 // Gamepad API: standard mapping defaults plus fully remappable buttons and steering axis.
-const gamepadDefaults={gas:7,brake:6,clutch:2,handbrake:1,gear1:12,gear2:13,gear3:14,gear4:15,neutral:5,reverse:4,exit:3,camera:9,engineOff:8,ignition:0,choke:10,hood:11,trunk:3};
+const gamepadDefaults={gas:7,brake:6,clutch:2,handbrake:1,gear1:12,gear2:13,gear3:14,gear4:15,neutral:5,reverse:4,exit:3,camera:9,engineOff:8,ignition:0,choke:10,hood:11,trunk:16};
 const gamepadLabels={gas:'Газ',brake:'Тормоз',clutch:'Сцепление',handbrake:'Ручник',gear1:'1-я передача',gear2:'2-я передача',gear3:'3-я передача',gear4:'4-я передача',neutral:'Нейтраль',reverse:'Задняя',exit:'Сесть / выйти / стартер',camera:'Смена камеры',engineOff:'Заглушить двигатель',ignition:'Зажигание',choke:'Подсос',hood:'Капот',trunk:'Багажник'};
 let gamepadMap={...gamepadDefaults},steerAxis=0,gasAxis=-1,brakeAxis=-1,clutchAxis=-1,gamepadDeadzone=.12,captureGamepadAction=null;
 let selectedGamepadId='';
@@ -636,7 +636,7 @@ try{
   const saved=JSON.parse(localStorage.getItem('volga-gamepad-map-v2')||'null');
   if(saved?.buttons)gamepadMap={...gamepadMap,...saved.buttons};
   if(Number.isInteger(saved?.steerAxis))steerAxis=saved.steerAxis;
-  for(const k of ['gasAxis','brakeAxis','clutchAxis'])if(Number.isInteger(saved?.[k]))window[k]=saved[k];
+  for(const k of ['gasAxis','brakeAxis','clutchAxis'])if(Number.isInteger(saved?.[k])){if(k==='gasAxis')gasAxis=saved[k];else if(k==='brakeAxis')brakeAxis=saved[k];else if(k==='clutchAxis')clutchAxis=saved[k];}
   if(Number.isFinite(saved?.deadzone))gamepadDeadzone=THREE.MathUtils.clamp(saved.deadzone,.05,.4);
   if(typeof saved?.selectedId==='string')selectedGamepadId=saved.selectedId;
 }catch{}
@@ -657,8 +657,8 @@ function renderGamepadMappings(axisCount=8){
   for(const [key,label] of [['steerAxis','Руль'],['gasAxis','Педаль газа'],['brakeAxis','Педаль тормоза'],['clutchAxis','Педаль сцепления']]){
     const row=document.createElement('label');row.className='mapping-row';
     row.innerHTML='<span>'+label+'</span><select data-axis="'+key+'">'+axisOptions()+'</select><span></span>';
-    const select=row.querySelector('select');select.value=String(window[key]);
-    select.addEventListener('change',()=>{window[key]=Number(select.value);saveGamepadMap();});
+    const select=row.querySelector('select');select.value=String(({steerAxis,gasAxis,brakeAxis,clutchAxis})[key]);
+    select.addEventListener('change',()=>{const v=Number(select.value);if(key==='steerAxis')steerAxis=v;else if(key==='gasAxis')gasAxis=v;else if(key==='brakeAxis')brakeAxis=v;else if(key==='clutchAxis')clutchAxis=v;saveGamepadMap();});
     gamepadMappings.append(row);
   }
   const deadRow=document.createElement('label');deadRow.className='mapping-row';
@@ -847,7 +847,7 @@ function animate(){
       fuelLiters=Math.max(0,fuelLiters-fuelFlow*dt);
       mileageKm+=absSpeed*dt/1000;
       if(fuelLiters<=0){engineOn=false;notify('БЕНЗИН ЗАКОНЧИЛСЯ! НУЖНА КАНИСТРА ИЛИ АЗС');}
-    }else{rpm=smooth(rpm,0,4,dt);}
+    }else if(keys.has('KeyE')&&ignitionOn){rpm=smooth(rpm,180,7,dt);}else{rpm=smooth(rpm,0,4,dt);}
     heading+=(speed/2.65)*Math.tan(steerAngle)*.72*dt;
     forward.set(-Math.sin(heading),0,-Math.cos(heading));
     car.position.addScaledVector(forward,speed*dt);
