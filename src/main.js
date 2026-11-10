@@ -224,6 +224,15 @@ box(body,[1.94,.25,1.15],[0,1.15,1.72],ivory,.07,4);
 box(body,[1.91,.16,4.22],[0,1.23,0],ivory,.05,3);
 box(body,[1.88,.12,4.15],[0,.62,0],ivoryDark,.035,3);
 
+// Hinged bonnet and boot lid. Both pivots sit at the rear edge of each lid.
+const hoodHinge = new THREE.Group(); hoodHinge.position.set(0,1.245,-1.02); body.add(hoodHinge);
+box(hoodHinge,[1.78,.075,1.22],[0,0,-.59],ivory,.045,3);
+box(hoodHinge,[1.58,.035,1.02],[0,-.045,-.59],ivoryDark,.025,2);
+const trunkHinge = new THREE.Group(); trunkHinge.position.set(0,1.235,1.02); body.add(trunkHinge);
+box(trunkHinge,[1.78,.075,1.22],[0,0,.59],ivory,.045,3);
+box(trunkHinge,[1.58,.035,1.02],[0,-.045,.59],ivoryDark,.025,2);
+let hoodOpen=false, trunkOpen=false;
+
 // Wheel arches: dark inner wells and rolled ivory lips.
 for(const side of [-1,1]) for(const z of [-1.48,1.48]){
   const arch = new THREE.Mesh(new THREE.TorusGeometry(.57,.055,10,40,Math.PI),ivory);
@@ -456,7 +465,7 @@ shadow.scale.set(1,1.65,1);
 // Controls: keyboard plus touch buttons.
 const keys=new Set();
 let cameraMode=0, speed=0, heading=0, steering=0, rpm=0, gear=0;
-let engineOn=false, handbrake=false, steerAngle=0;
+let engineOn=false, ignitionOn=false, chokeOn=false, startRevTimer=0, handbrake=false, steerAngle=0;
 let clutchEngagement=1, clutchStallTimer=0;
 let verticalBounce=0, roll=0, pitch=0;
 let isOnFoot=false, starterHold=0, stallCountdown=85+Math.random()*55;
@@ -467,7 +476,7 @@ let gameTime=0, promptText='';
 let toastTimer;
 function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200)}
 function setCameraMode(){cameraMode=(cameraMode+1)%4;notify(['КАМЕРА: СЗАДИ','КАМЕРА: КАПОТ','КАМЕРА: САЛОН','КАМЕРА: СВЕРХУ'][cameraMode])}
-function resetCar(){if(activeBuilding){activeBuilding.interior.visible=false;activeBuilding.exterior.visible=true;activeBuilding=null;}car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=0;gear=0;engineOn=false;isOnFoot=false;player.visible=false;starterHold=0;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА · ЗАЖМИ E ДЛЯ ЗАПУСКА')}
+function resetCar(){if(activeBuilding){activeBuilding.interior.visible=false;activeBuilding.exterior.visible=true;activeBuilding=null;}car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=0;gear=0;engineOn=false;ignitionOn=false;chokeOn=false;startRevTimer=0;hoodOpen=false;trunkOpen=false;hoodHinge.rotation.x=0;trunkHinge.rotation.x=0;isOnFoot=false;player.visible=false;starterHold=0;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА · НЕЙТРАЛЬ, ЗАЖИГАНИЕ И СТАРТЕР')}
 const player=new THREE.Group(); scene.add(player);
 const playerBody=mesh(new THREE.CapsuleGeometry(.28,.82,4,8),mat(0x303c4a),player,[0,.88,0]);
 const playerHead=sphere(player,[0,1.55,0],[.23,.25,.23],mat(0xc69b78));
@@ -546,7 +555,14 @@ addEventListener('keydown',e=>{
   keys.add(e.code);
   if(e.code==='KeyV'&&!e.repeat&&!isOnFoot)setCameraMode();
   if(e.code==='Backspace'&&!e.repeat)resetCar();
-  if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
+  if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;ignitionOn=false;rpm=0;startRevTimer=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН · ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
+  if(e.code==='KeyK'&&!e.repeat&&!isOnFoot){ignitionOn=!ignitionOn;if(!ignitionOn){engineOn=false;rpm=0;}notify(ignitionOn?'ЗАЖИГАНИЕ ВКЛЮЧЕНО':'ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
+  if(e.code==='KeyZ'&&!e.repeat&&!isOnFoot){chokeOn=!chokeOn;notify(chokeOn?'ПОДСОС ВЫТЯНУТ':'ПОДСОС УБРАН');}
+  if((e.code==='KeyH'||e.code==='KeyO')&&!e.repeat){
+    if(Math.abs(speed)>.1){notify('ОСТАНОВИ ВОЛГУ ПЕРЕД ОТКРЫТИЕМ');}
+    else if(e.code==='KeyH'){hoodOpen=!hoodOpen;notify(hoodOpen?'КАПОТ ОТКРЫТ':'КАПОТ ЗАКРЫТ');}
+    else{trunkOpen=!trunkOpen;notify(trunkOpen?'БАГАЖНИК ОТКРЫТ':'БАГАЖНИК ЗАКРЫТ');}
+  }
   if(e.code==='KeyE'&&!e.repeat){
     ePressedInCar=!isOnFoot;
     if(!isOnFoot){if(engineOn)exitCar();}
@@ -612,13 +628,21 @@ $('cameraButton')?.addEventListener('click',setCameraMode);
 addEventListener('blur',()=>{keys.clear();document.querySelectorAll('.touch-controls button.pressed').forEach(b=>b.classList.remove('pressed'));});
 
 // Gamepad API: standard mapping defaults plus fully remappable buttons and steering axis.
-const gamepadDefaults={gas:7,brake:6,clutch:2,handbrake:1,gear1:12,gear2:13,gear3:14,gear4:15,neutral:5,reverse:4,exit:3,camera:9,engineOff:8};
-const gamepadLabels={gas:'Газ',brake:'Тормоз',clutch:'Сцепление',handbrake:'Ручник',gear1:'1-я передача',gear2:'2-я передача',gear3:'3-я передача',gear4:'4-я передача',neutral:'Нейтраль',reverse:'Задняя',exit:'Сесть / выйти / стартер',camera:'Смена камеры',engineOff:'Заглушить двигатель'};
-let gamepadMap={...gamepadDefaults},steerAxis=0,gamepadDeadzone=.16,captureGamepadAction=null;
-try{const saved=JSON.parse(localStorage.getItem('volga-gamepad-map-v1')||'null');if(saved?.buttons)gamepadMap={...gamepadMap,...saved.buttons};if(Number.isInteger(saved?.steerAxis))steerAxis=saved.steerAxis;if(Number.isFinite(saved?.deadzone))gamepadDeadzone=THREE.MathUtils.clamp(saved.deadzone,.05,.4);}catch{}
-const gamepadStatus=$('gamepadStatus'),gamepadMappings=$('gamepadMappings'),gamepadPanel=$('gamepadPanel');
-function saveGamepadMap(){try{localStorage.setItem('volga-gamepad-map-v1',JSON.stringify({buttons:gamepadMap,steerAxis,deadzone:gamepadDeadzone}));}catch{}}
-function renderGamepadMappings(){
+const gamepadDefaults={gas:7,brake:6,clutch:2,handbrake:1,gear1:12,gear2:13,gear3:14,gear4:15,neutral:5,reverse:4,exit:3,camera:9,engineOff:8,ignition:0,choke:10,hood:11,trunk:3};
+const gamepadLabels={gas:'Газ',brake:'Тормоз',clutch:'Сцепление',handbrake:'Ручник',gear1:'1-я передача',gear2:'2-я передача',gear3:'3-я передача',gear4:'4-я передача',neutral:'Нейтраль',reverse:'Задняя',exit:'Сесть / выйти / стартер',camera:'Смена камеры',engineOff:'Заглушить двигатель',ignition:'Зажигание',choke:'Подсос',hood:'Капот',trunk:'Багажник'};
+let gamepadMap={...gamepadDefaults},steerAxis=0,gasAxis=-1,brakeAxis=-1,clutchAxis=-1,gamepadDeadzone=.12,captureGamepadAction=null;
+let selectedGamepadId='';
+try{
+  const saved=JSON.parse(localStorage.getItem('volga-gamepad-map-v2')||'null');
+  if(saved?.buttons)gamepadMap={...gamepadMap,...saved.buttons};
+  if(Number.isInteger(saved?.steerAxis))steerAxis=saved.steerAxis;
+  for(const k of ['gasAxis','brakeAxis','clutchAxis'])if(Number.isInteger(saved?.[k]))window[k]=saved[k];
+  if(Number.isFinite(saved?.deadzone))gamepadDeadzone=THREE.MathUtils.clamp(saved.deadzone,.05,.4);
+  if(typeof saved?.selectedId==='string')selectedGamepadId=saved.selectedId;
+}catch{}
+const gamepadStatus=$('gamepadStatus'),gamepadMappings=$('gamepadMappings'),gamepadPanel=$('gamepadPanel'),gamepadDeviceSelect=$('gamepadDevice');
+function saveGamepadMap(){try{localStorage.setItem('volga-gamepad-map-v2',JSON.stringify({buttons:gamepadMap,steerAxis,gasAxis,brakeAxis,clutchAxis,deadzone:gamepadDeadzone,selectedId:selectedGamepadId}));}catch{}}
+function renderGamepadMappings(axisCount=8){
   if(!gamepadMappings)return;
   gamepadMappings.innerHTML='';
   for(const [action,label] of Object.entries(gamepadLabels)){
@@ -626,64 +650,98 @@ function renderGamepadMappings(){
     const name=document.createElement('span');name.textContent=label;
     const value=document.createElement('kbd');value.textContent='Кнопка '+gamepadMap[action];
     const assign=document.createElement('button');assign.type='button';assign.textContent=captureGamepadAction===action?'НАЖМИ КНОПКУ…':'НАЗНАЧИТЬ';
-    assign.addEventListener('click',()=>{captureGamepadAction=action;renderGamepadMappings();});
+    assign.addEventListener('click',()=>{captureGamepadAction=action;renderGamepadMappings(axisCount);});
     row.append(name,value,assign);gamepadMappings.append(row);
   }
-  const axisRow=document.createElement('label');axisRow.className='mapping-row';
-  axisRow.innerHTML='<span>Ось руля</span><select id="gamepadSteerAxis"><option value="0">Левый стик X</option><option value="1">Левый стик Y</option><option value="2">Правый стик X</option><option value="3">Правый стик Y</option></select><span></span>';
-  gamepadMappings.append(axisRow);
-  const axisSelect=axisRow.querySelector('select');axisSelect.value=String(steerAxis);
-  axisSelect.addEventListener('change',()=>{steerAxis=Number(axisSelect.value);saveGamepadMap();});
+  const axisOptions=(selected)=>'<option value="-1">Не используется</option>'+Array.from({length:Math.max(4,axisCount)},(_,i)=>'<option value="'+i+'">Ось '+i+'</option>').join('');
+  for(const [key,label] of [['steerAxis','Руль'],['gasAxis','Педаль газа'],['brakeAxis','Педаль тормоза'],['clutchAxis','Педаль сцепления']]){
+    const row=document.createElement('label');row.className='mapping-row';
+    row.innerHTML='<span>'+label+'</span><select data-axis="'+key+'">'+axisOptions()+'</select><span></span>';
+    const select=row.querySelector('select');select.value=String(window[key]);
+    select.addEventListener('change',()=>{window[key]=Number(select.value);saveGamepadMap();});
+    gamepadMappings.append(row);
+  }
   const deadRow=document.createElement('label');deadRow.className='mapping-row';
-  deadRow.innerHTML='<span>Мёртвая зона стика</span><input id="gamepadDeadzone" type="range" min="5" max="40" value="'+Math.round(gamepadDeadzone*100)+'"><output>'+Math.round(gamepadDeadzone*100)+'%</output>';
+  deadRow.innerHTML='<span>Мёртвая зона</span><input type="range" min="5" max="40" value="'+Math.round(gamepadDeadzone*100)+'"><output>'+Math.round(gamepadDeadzone*100)+'%</output>';
   gamepadMappings.append(deadRow);
   const slider=deadRow.querySelector('input'),output=deadRow.querySelector('output');
   slider.addEventListener('input',()=>{gamepadDeadzone=Number(slider.value)/100;output.value=slider.value+'%';saveGamepadMap();});
 }
 renderGamepadMappings();
-$('gamepadButton')?.addEventListener('click',()=>{gamepadPanel?.classList.toggle('open');});
+function refreshGamepadChoices(){
+  if(!gamepadDeviceSelect||!navigator.getGamepads)return;
+  const pads=Array.from(navigator.getGamepads()).filter(p=>p&&p.connected);
+  const previous=selectedGamepadId;
+  gamepadDeviceSelect.innerHTML='<option value="">— ВЫБЕРИ ПОДКЛЮЧЁННЫЙ КОНТРОЛЛЕР —</option>';
+  pads.forEach(p=>{
+    const option=document.createElement('option');option.value=p.id;option.textContent=p.id+' · слот '+p.index;
+    gamepadDeviceSelect.append(option);
+  });
+  gamepadDeviceSelect.value=pads.some(p=>p.id===previous)?previous:'';
+  if(gamepadDeviceSelect.value!==previous){selectedGamepadId='';saveGamepadMap();}
+  if(gamepadStatus&&!pads.length)gamepadStatus.textContent='Контроллеры не обнаружены. Подключи геймпад или руль, затем обнови список.';
+}
+$('gamepadButton')?.addEventListener('click',()=>{gamepadPanel?.classList.toggle('open');refreshGamepadChoices();});
 $('gamepadClose')?.addEventListener('click',()=>gamepadPanel?.classList.remove('open'));
-$('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gamepadDeadzone=.16;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
-let previousGamepadButtons=[];
-let gamepadVirtualKeys=new Set(),gamepadSteeringKey=null;
+gamepadDeviceSelect?.addEventListener('change',()=>{selectedGamepadId=gamepadDeviceSelect.value;previousGamepadButtons=[];for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();saveGamepadMap();if(gamepadStatus)gamepadStatus.textContent=selectedGamepadId?'Выбран: '+selectedGamepadId:'Сначала выбери настоящий контроллер';});
+$('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
+$('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
+let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
 function buttonPressed(gp,index){const b=gp.buttons[index];return !!b&&(b.pressed||b.value>.55);}
-function pollGamepad(){
+function axisPedal(gp,index){
+  if(index<0||index>=gp.axes.length)return 0;
+  const raw=gp.axes[index];
+  return THREE.MathUtils.clamp((raw+1)/2,0,1);
+}
+function pollGamepad(dt){
   const pads=navigator.getGamepads?navigator.getGamepads():[];
-  const gp=Array.from(pads).find(p=>p&&p.connected);
-  if(!gp){if(gamepadStatus)gamepadStatus.textContent='Геймпад не подключён';previousGamepadButtons=[];for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}return;}
-  if(gamepadStatus)gamepadStatus.textContent='Подключён: '+gp.id;
+  const connected=Array.from(pads).filter(p=>p&&p.connected);
+  if(gameTime-lastGamepadRefresh>1.0){refreshGamepadChoices();lastGamepadRefresh=gameTime;}
+  const gp=connected.find(p=>p.id===selectedGamepadId);
+  if(!gp){
+    if(gamepadStatus)gamepadStatus.textContent=connected.length?'Выбери контроллер в списке — клавиатура и мышь не выбираются автоматически':'Контроллер не подключён';
+    previousGamepadButtons=[];
+    for(const code of gamepadVirtualKeys)keys.delete(code);gamepadVirtualKeys.clear();
+    if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
+    return;
+  }
+  if(gamepadStatus)gamepadStatus.textContent='Выбран: '+gp.id+' · '+gp.buttons.length+' кнопок · '+gp.axes.length+' осей'+(gp.mapping==='standard'?' · стандартная раскладка':' · нестандартная раскладка');
   if(captureGamepadAction){
     const pressed=gp.buttons.findIndex((b,i)=>buttonPressed(gp,i)&&!previousGamepadButtons[i]);
-    if(pressed>=0){gamepadMap[captureGamepadAction]=pressed;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();}
+    if(pressed>=0){gamepadMap[captureGamepadAction]=pressed;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings(gp.axes.length);}
     previousGamepadButtons=gp.buttons.map((b,i)=>buttonPressed(gp,i));return;
   }
-  const continuous=[['gas','KeyW'],['brake','KeyS'],['clutch','KeyC'],['handbrake','Space']];
+  const axisGas=axisPedal(gp,gasAxis),axisBrake=axisPedal(gp,brakeAxis),axisClutch=axisPedal(gp,clutchAxis);
   const nextVirtual=new Set();
-  for(const [action,code] of continuous)if(buttonPressed(gp,gamepadMap[action]))nextVirtual.add(code);
+  if(buttonPressed(gp,gamepadMap.gas)||axisGas>.42)nextVirtual.add('KeyW');
+  if(buttonPressed(gp,gamepadMap.brake)||axisBrake>.42)nextVirtual.add('KeyS');
+  if(buttonPressed(gp,gamepadMap.clutch)||axisClutch>.42)nextVirtual.add('KeyC');
+  if(buttonPressed(gp,gamepadMap.handbrake))nextVirtual.add('Space');
   for(const code of gamepadVirtualKeys)if(!nextVirtual.has(code))keys.delete(code);
   for(const code of nextVirtual)keys.add(code);
   gamepadVirtualKeys=nextVirtual;
   const justPressed=action=>buttonPressed(gp,gamepadMap[action])&&!previousGamepadButtons[gamepadMap[action]];
   if(!isOnFoot){
-    if(justPressed('gear1'))shiftGear(1);
-    if(justPressed('gear2'))shiftGear(2);
-    if(justPressed('gear3'))shiftGear(3);
-    if(justPressed('gear4'))shiftGear(4);
+    for(let n=1;n<=4;n++)if(justPressed('gear'+n))shiftGear(n);
     if(justPressed('neutral'))shiftGear(0);
     if(justPressed('reverse'))shiftGear(-1);
+    if(justPressed('ignition')){ignitionOn=!ignitionOn;if(!ignitionOn)engineOn=false;notify(ignitionOn?'ЗАЖИГАНИЕ ВКЛЮЧЕНО':'ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
+    if(justPressed('choke')){chokeOn=!chokeOn;notify(chokeOn?'ПОДСОС ВЫТЯНУТ':'ПОДСОС УБРАН');}
   }
+  if(justPressed('hood')&&Math.abs(speed)<.1){hoodOpen=!hoodOpen;notify(hoodOpen?'КАПОТ ОТКРЫТ':'КАПОТ ЗАКРЫТ');}
+  if(justPressed('trunk')&&Math.abs(speed)<.1){trunkOpen=!trunkOpen;notify(trunkOpen?'БАГАЖНИК ОТКРЫТ':'БАГАЖНИК ЗАКРЫТ');}
   if(justPressed('exit'))window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyE',bubbles:true}));
   if(previousGamepadButtons[gamepadMap.exit]&&!buttonPressed(gp,gamepadMap.exit))window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyE',bubbles:true}));
   if(justPressed('camera'))setCameraMode();
-  if(justPressed('engineOff')&&!isOnFoot){engineOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
-  const raw=gp.axes[steerAxis]||0;
+  if(justPressed('engineOff')&&!isOnFoot){engineOn=false;ignitionOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
+  const raw=steerAxis>=0?(gp.axes[steerAxis]||0):0;
   const steeringAxis=Math.abs(raw)<gamepadDeadzone?0:Math.sign(raw)*(Math.abs(raw)-gamepadDeadzone)/(1-gamepadDeadzone);
   if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
   if(Math.abs(steeringAxis)>.03){gamepadSteeringKey=steeringAxis<0?'KeyA':'KeyD';keys.add(gamepadSteeringKey);}
   previousGamepadButtons=gp.buttons.map((b,i)=>buttonPressed(gp,i));
 }
-addEventListener('gamepadconnected',e=>{if(gamepadStatus)gamepadStatus.textContent='Подключён: '+e.gamepad.id;notify('ГЕЙМПАД ПОДКЛЮЧЁН');});
-addEventListener('gamepaddisconnected',()=>{if(gamepadStatus)gamepadStatus.textContent='Геймпад не подключён';});
+addEventListener('gamepadconnected',()=>{refreshGamepadChoices();notify('КОНТРОЛЛЕР ОБНАРУЖЕН · ВЫБЕРИ ЕГО В СПИСКЕ');});
+addEventListener('gamepaddisconnected',()=>{refreshGamepadChoices();});
 // Procedural engine audio. Browsers unlock sound after the first user gesture.
 let audioContext=null, engineOsc=null, engineHarmonic=null, engineFilter=null, engineGain=null;
 function startEngineAudio(){
@@ -717,16 +775,24 @@ function smooth(current,target,rate,dt){return THREE.MathUtils.damp(current,targ
 function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.035);
-  pollGamepad();
+  pollGamepad(dt);
   gameTime+=dt;
+  hoodHinge.rotation.x=smooth(hoodHinge.rotation.x,hoodOpen?.92:0,5,dt);
+  trunkHinge.rotation.x=smooth(trunkHinge.rotation.x,trunkOpen?-.82:0,5,dt);
   if(!isOnFoot){
     if(!engineOn&&keys.has('KeyE')){
-      if(gear!==0){starterHold=0;updatePrompt('СТАРТЕР ЗАБЛОКИРОВАН: ВКЛЮЧИ НЕЙТРАЛЬ');}
+      if(!ignitionOn){starterHold=0;updatePrompt('СНАЧАЛА ВКЛЮЧИ ЗАЖИГАНИЕ: K');}
+      else if(gear!==0){starterHold=0;updatePrompt('СТАРТЕР ЗАБЛОКИРОВАН: ВЫЖМИ СЦЕПЛЕНИЕ И ВКЛЮЧИ НЕЙТРАЛЬ');}
       else if(fuelLiters<=0){starterHold=0;updatePrompt('НЕТ БЕНЗИНА — ЗАПРАВЬ БАК');}
       else{
         starterHold+=dt;
-        updatePrompt('ЗАПУСК ДВИГАТЕЛЯ: УДЕРЖИВАЙ E · '+Math.min(100,Math.round(starterHold/1.65*100))+'%');
-        if(starterHold>=1.65){engineOn=true;rpm=850;starterHold=0;stallCountdown=85+Math.random()*85;notify('СТАРТЕР ПРОКРУТИЛ ДВИГАТЕЛЬ — ВОЛГА ЗАВЕЛАСЬ');}
+        const crankNeed=chokeOn?1.25:(keys.has('KeyW')?1.75:2.6);
+        rpm=smooth(rpm,180+(keys.has('KeyW')?100:0),7,dt);
+        updatePrompt('СТАРТЕР КРУТИТ · '+(chokeOn?'ПОДСОС ВЫТЯНУТ':'ПОДСОС НЕ ВЫТЯНУТ')+' · '+Math.min(100,Math.round(starterHold/crankNeed*100))+'%');
+        if(starterHold>=crankNeed){
+          engineOn=true;rpm=1550;startRevTimer=3.2;starterHold=0;stallCountdown=85+Math.random()*85;
+          notify('ВОЛГА ЗАВЕЛАСЬ · ДВИГАТЕЛЬ ПРОГРЕВАЕТСЯ');
+        }
       }
     }else if(!keys.has('KeyE')&&!engineOn){starterHold=0;}
     const throttle=engineOn&&(keys.has('KeyW')||keys.has('ArrowUp'));
@@ -755,11 +821,13 @@ function animate(){
     else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,43);
     else speed=THREE.MathUtils.clamp(speed,-43,43);
     const targetRpm=engineOn
-      ?(gear===0||clutchEngagement<.18
+      ?Math.max((gear===0||clutchEngagement<.18
         ?850+(throttle?Math.min(3900,Math.abs(speed)*100+2800):0)
-        :THREE.MathUtils.clamp(850+absSpeed*gearRatio*72+(throttle?320:0),850,6000))
+        :THREE.MathUtils.clamp(850+absSpeed*gearRatio*72+(throttle?320:0),850,6000)),
+        startRevTimer>0?1450+Math.sin((3.2-startRevTimer)*Math.PI/3.2)*350:0)
       :0;
     rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
+    if(startRevTimer>0)startRevTimer=Math.max(0,startRevTimer-dt);
     // Releasing the clutch in gear without throttle at a standstill stalls the engine.
     if(engineOn&&gear!==0&&clutchEngagement>.84&&absSpeed<.85&&!throttle){
       clutchStallTimer+=dt;
@@ -810,7 +878,7 @@ function animate(){
       engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):(keys.has('KeyE')?.012:.0001),audioContext.currentTime,.16);
     }
     const nearStation=inStation(car.position.x,car.position.z);
-    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'W — газ · S — тормоз · A/D — руль · C — сцепление · Shift/Ctrl — механическое переключение · X — задняя · Space — ручник · E — выйти':'НЕЙТРАЛЬ · УДЕРЖИВАЙ E ДЛЯ ЗАПУСКА СТАРТЕРОМ'))+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
+    updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'W — газ · S — тормоз · A/D — руль · C — сцепление · Shift/Ctrl — передачи · H — капот · O — багажник · E — выйти':'K — зажигание · Z — подсос · удерживай E — стартер · W — подгазовать'))+' · '+(ignitionOn?'ЗАЖИГАНИЕ ВКЛ':'ЗАЖИГАНИЕ ВЫКЛ')+' · '+(chokeOn?'ПОДСОС ВЫТЯНУТ':'ПОДСОС УБРАН')+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
   }else{
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
     const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
