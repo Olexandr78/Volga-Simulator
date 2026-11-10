@@ -653,7 +653,7 @@ function renderGamepadMappings(axisCount=8){
     assign.addEventListener('click',()=>{captureGamepadAction=action;renderGamepadMappings(axisCount);});
     row.append(name,value,assign);gamepadMappings.append(row);
   }
-  const axisOptions=(selected)=>'<option value="-1">Не используется</option>'+Array.from({length:Math.max(4,axisCount)},(_,i)=>'<option value="'+i+'">Ось '+i+'</option>').join('');
+  const axisOptions=()=>'<option value="-1">Не используется</option>'+Array.from({length:Math.max(8,axisCount)},(_,i)=>'<option value="'+i+'">Ось '+i+'</option><option value="'+(-i-2)+'">Ось '+i+' · инверсия</option>').join('');
   for(const [key,label] of [['steerAxis','Руль'],['gasAxis','Педаль газа'],['brakeAxis','Педаль тормоза'],['clutchAxis','Педаль сцепления']]){
     const row=document.createElement('label');row.className='mapping-row';
     row.innerHTML='<span>'+label+'</span><select data-axis="'+key+'">'+axisOptions()+'</select><span></span>';
@@ -688,10 +688,13 @@ $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
 let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
 function buttonPressed(gp,index){const b=gp.buttons[index];return !!b&&(b.pressed||b.value>.55);}
-function axisPedal(gp,index){
-  if(index<0||index>=gp.axes.length)return 0;
-  const raw=gp.axes[index];
-  return THREE.MathUtils.clamp((raw+1)/2,0,1);
+function decodeAxis(setting){return setting>=0?{index:setting,invert:false}:setting<=-2?{index:-setting-2,invert:true}:{index:-1,invert:false};}
+function axisPedal(gp,setting){
+  const cfg=decodeAxis(setting);
+  if(cfg.index<0||cfg.index>=gp.axes.length)return 0;
+  let value=THREE.MathUtils.clamp((gp.axes[cfg.index]+1)/2,0,1);
+  if(cfg.invert)value=1-value;
+  return value;
 }
 function pollGamepad(dt){
   const pads=navigator.getGamepads?navigator.getGamepads():[];
@@ -734,7 +737,9 @@ function pollGamepad(dt){
   if(previousGamepadButtons[gamepadMap.exit]&&!buttonPressed(gp,gamepadMap.exit))window.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyE',bubbles:true}));
   if(justPressed('camera'))setCameraMode();
   if(justPressed('engineOff')&&!isOnFoot){engineOn=false;ignitionOn=false;rpm=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН');}
-  const raw=steerAxis>=0?(gp.axes[steerAxis]||0):0;
+  const steerCfg=decodeAxis(steerAxis);
+  let raw=steerCfg.index>=0?(gp.axes[steerCfg.index]||0):0;
+  if(steerCfg.invert)raw=-raw;
   const steeringAxis=Math.abs(raw)<gamepadDeadzone?0:Math.sign(raw)*(Math.abs(raw)-gamepadDeadzone)/(1-gamepadDeadzone);
   if(gamepadSteeringKey){keys.delete(gamepadSteeringKey);gamepadSteeringKey=null;}
   if(Math.abs(steeringAxis)>.03){gamepadSteeringKey=steeringAxis<0?'KeyA':'KeyD';keys.add(gamepadSteeringKey);}
