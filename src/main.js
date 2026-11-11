@@ -591,24 +591,32 @@ addEventListener('keyup',e=>{
   physicalKeys.delete(e.code);if(!gamepadVirtualKeys.has(e.code))keys.delete(e.code);
   if(e.code==='KeyE'){if(ePressedInCar&&!isOnFoot&&!engineOn&&starterHold<.25)exitCar();ePressedInCar=false;}
 });
+// Touch controls use captured pointer IDs and explicit pressed state.
+// This prevents Android text selection, accidental early releases and stuck keys.
+const activeTouchPointers=new Map();
 document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
   const code=button.dataset.key;
-  const press=e=>{
-    e.preventDefault();
-    if(!keys.has(code))window.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true}));
-    try{button.setPointerCapture(e.pointerId);}catch{}
-    button.classList.add('pressed');
-  };
-  const release=e=>{
-    e.preventDefault();
+  const release=(pointerId)=>{
+    const active=activeTouchPointers.get(button);
+    if(active===undefined||(pointerId!==undefined&&active!==pointerId))return;
+    activeTouchPointers.delete(button);
     window.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true}));
     button.classList.remove('pressed');
   };
-  button.addEventListener('pointerdown',press);
-  button.addEventListener('pointerup',release);
-  button.addEventListener('pointercancel',release);
-  button.addEventListener('lostpointercapture',release);
+  button.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    e.preventDefault();
+    if(activeTouchPointers.has(button))return;
+    activeTouchPointers.set(button,e.pointerId);
+    try{button.setPointerCapture(e.pointerId);}catch{}
+    window.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true}));
+    button.classList.add('pressed');
+  });
+  button.addEventListener('pointerup',e=>{e.preventDefault();release(e.pointerId);});
+  button.addEventListener('pointercancel',e=>{e.preventDefault();release(e.pointerId);});
+  button.addEventListener('lostpointercapture',e=>release(e.pointerId));
   button.addEventListener('contextmenu',e=>e.preventDefault());
+  button.addEventListener('dragstart',e=>e.preventDefault());
 });
 
 // Explicit PC/tablet mode switch. Keyboard remains active in either mode.
