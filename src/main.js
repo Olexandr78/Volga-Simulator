@@ -617,7 +617,7 @@ const raceGround=mesh(new THREE.PlaneGeometry(100,1800),mat(0x405238,0,.98),scen
 const raceRoad=mesh(new THREE.PlaneGeometry(22,1720),asphalt,scene,[raceTrackX,-.075,0],[-Math.PI/2,0,0],false);
 for(const x of [-8,8])mesh(new THREE.PlaneGeometry(.18,1720),laneWhite,scene,[raceTrackX+x,-.035,0],[-Math.PI/2,0,0],false);
 for(let z=-820;z<=820;z+=20)for(const x of [-3.8,3.8])mesh(new THREE.PlaneGeometry(.12,8),laneWhite,scene,[raceTrackX+x,-.035,z],[-Math.PI/2,0,0],false);
-for(const z of [-805,805])for(let x=-11;x<=11;x+=2)box(scene,[1.8,.75,.35],[raceTrackX+x,.38,z],mat(0xe4e0d2),.025,2);
+for(const z of [-849,760])for(let x=-11;x<=11;x+=2)box(scene,[1.8,.75,.35],[raceTrackX+x,.38,z],mat(0xe4e0d2),.025,2);
 const raceScooter=new THREE.Group();scene.add(raceScooter);raceScooter.visible=false;
 const raceWheelMat=mat(0x101214,.02,.9),raceScootMat=mat(0x222a31,.45,.42);
 for(const z of [-.55,.55])mesh(new THREE.TorusGeometry(.24,.065,10,22),raceWheelMat,raceScooter,[0,.24,z],[Math.PI/2,0,0]);
@@ -1340,6 +1340,7 @@ function animate(){
     const doorPoint=worldPoint(-1.65,.15);
     const nearDoor=!activeBuilding&&Math.hypot(player.position.x-doorPoint.x,player.position.z-doorPoint.z)<1.9;
     const nearbyBuilding=!activeBuilding?nearestBuilding():null;
+    const rivalDistance=Math.hypot(player.position.x-rivalScooter.position.x,player.position.z-rivalScooter.position.z);
     const front=worldPoint(0,-2.8);
     const nearFront=!activeBuilding&&Math.hypot(player.position.x-front.x,player.position.z-front.z)<2.1;
     if(!activeBuilding&&nearFront&&keys.has('KeyE')&&!engineOn&&starterRodHeld){
@@ -1356,6 +1357,7 @@ function animate(){
     else if(activeBuilding)updatePrompt(activeBuilding.name+' · WASD — ходить · Shift — бежать · E — выйти');
     else if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
     else if(!activeBuilding&&Math.hypot(player.position.x-worldPoint(0,2.55).x,player.position.z-worldPoint(0,2.55).z)<2.0)updatePrompt(trunkOpen?(starterRodHeld?'E — положить ручку обратно в багажник':'E — взять ручку заводки из багажника'):'O — открыть багажник');
+    else if(rivalDistance<14)updatePrompt('САМОКАТЧИК G2 MAX: «ВОЛГА — ХЛАМ! Я ТЕБЯ ПОБЬЮ!» · T — ОТВЕТИТЬ ГОНКОЙ');
     else if(nearbyBuilding)updatePrompt('E — войти в '+nearbyBuilding.name);
     else if(!nearFront)updatePrompt('WASD — идти · Shift — бежать · Подойди к передку и удерживай E, чтобы завести ручкой');
     if(nearFront&&!engineOn&&starterHold===0)updatePrompt(starterRodHeld?'РУЧКА В РУКАХ: УДЕРЖИВАЙ E 2.4 СЕКУНДЫ — ЗАВЕСТИ':'НУЖНА РУЧКА: ОТКРОЙ БАГАЖНИК (O) И ВОЗЬМИ ЕЁ (E)');
