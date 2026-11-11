@@ -7,6 +7,7 @@
     <meta name="description" content="3D-симулятор ГАЗ-24-10 Волга на Three.js" />
     <title>Volga Simulator — ГАЗ-24-10</title>
     <link rel="stylesheet" href="./src/style.css" />
+    <script>if (/iPhone|iPod|Android.*Mobile|Windows Phone/i.test(navigator.userAgent) || navigator.userAgentData?.mobile) document.documentElement.classList.add("phone-blocked");</script>
     <script type="importmap">
       {
         "imports": {
@@ -18,6 +19,15 @@
   </head>
   <body>
     <div id="app">
+      <section id="phoneBlock" role="alert" aria-live="assertive">
+        <div class="phone-block-card">
+          <div class="phone-block-icon">!</div>
+          <div class="phone-block-kicker">VOLGA SIMULATOR · ДОСТУП ОБМЕЖЕНО</div>
+          <h1>На телефоне играть не рекомендуется</h1>
+          <p>Эта версия симулятора рассчитана на компьютер и планшет. На маленьком экране неудобно одновременно управлять газом, тормозом, сцеплением и коробкой передач — можно заглохнуть просто из-за того, что не успел нажать нужную педаль.</p>
+          <p class="phone-block-note">Игра не запущена. Открой Volga Simulator на компьютере или планшете.</p>
+        </div>
+      </section>
       <header class="topbar">
         <div class="brand"><span class="brand-mark">V</span><div><strong>VOLGA SIMULATOR</strong><small>ГАЗ-24-10 · СЛОНОВАЯ КОСТЬ</small></div></div>
         <div class="top-actions"><span class="live"><i></i> FREE DRIVE</span><button id="controlModeButton" class="glass-button" type="button">РЕЖИМ: ПК</button><button id="gamepadButton" class="glass-button" type="button">ГЕЙМПАД</button><button id="cameraButton" class="glass-button" type="button">КАМЕРА <b>V</b></button></div>
