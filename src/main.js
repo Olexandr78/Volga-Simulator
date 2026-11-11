@@ -429,6 +429,16 @@ for(let i=0;i<32;i++){
   mesh(new THREE.SphereGeometry(1,10,8),mat(0x536b4e),city,[x,2.9,z]).scale.set(1.15,1.35,1.15);
 }
 
+
+// Player home and a working grocery store in the residential quarter.
+const playerHome=cityBuilding(58,18,13,5.2,11,mat(0xc1b69f),0);
+const homeData=enterableBuildings[enterableBuildings.length-1];homeData.name='ДОМ ИГРОКА';homeData.kind='home';
+box(playerHome,[3.8,.5,.16],[0,3.2,-5.62],mat(0x8c2923),.03,2);
+const grocery=cityBuilding(-58,18,14,4.4,11,mat(0xb9a78c),0);
+const shopData=enterableBuildings[enterableBuildings.length-1];shopData.name='ПРОДУКТОВЫЙ МАГАЗИН';shopData.kind='shop';
+box(grocery,[5.2,.55,.16],[0,2.75,-5.62],mat(0x2c694c),.03,2);
+for(const x of [-3.8,3.8])box(grocery,[.12,2.3,.12],[x,1.2,-5.7],chrome,.02,2);
+
 // Front grille with vertical bars, emblem, headlights and indicators.
 box(body,[1.06,.43,.075],[0,1.0,-2.395],darkChrome,.035);
 box(body,[.91,.33,.04],[0,1.0,-2.445],black,.015);
@@ -515,6 +525,41 @@ let isOnFoot=false, starterHold=0, stallCountdown=85+Math.random()*55;
 let activeBuilding=null;
 let fuelLiters=38, fullCanLiters=5, emptyCanLiters=0, canisterCapacity=5;
 let mileageKm=42150, fuelFlow=0;
+let hunger=12,fatigue=8,money=350,needsTick=0,shopOpen=false;
+const scooters=[];
+function createScooter(z,index){
+ const g=new THREE.Group();scene.add(g);g.position.set(index%2?4.8:-4.8,0,z);
+ const frame=mat(index%2?0x263d65:0x9b3f32,.25,.45),wheel=mat(0x17191a,0,.9),metal=mat(0x9ca5a5,.8,.3);
+ for(const wz of [-.48,.48]){const w=mesh(new THREE.TorusGeometry(.19,.045,8,16),wheel,g,[0,.2,wz],[Math.PI/2,0,0]);mesh(new THREE.CylinderGeometry(.025,.025,.08,10),metal,g,[0,.2,wz],[Math.PI/2,0,0]);}
+ box(g,[.12,.08,.8],[0,.38,0],frame,.025,2);box(g,[.08,.42,.1],[0,.62,-.08],frame,.02,2);box(g,[.38,.08,.12],[0,.88,-.08],black,.02,2);
+ const rider=mesh(new THREE.CapsuleGeometry(.13,.48,3,6),mat(index%2?0x394d72:0x5b4b38),g,[0,1.22,.02]);sphere(g,[0,1.58,.02],[.16,.17,.16],mat(0xc69b78));
+ box(g,[.24,.08,.12],[0,1.78,-.05],mat(0x282c2e),.04,2);
+ const taunt=mesh(new THREE.BoxGeometry(1.5,.28,.04),mat(0xf1e5c7),g,[0,2.0,.05]);taunt.visible=false;
+ scooters.push({group:g,speed:5.2+index*.35,passed:false,taunt});
+}
+for(let i=0;i<4;i++)createScooter(-55-i*48,i);
+function updateNeeds(dt){
+ if(!isOnFoot&&engineOn)hunger=Math.min(100,hunger+dt*.018);
+ else if(isOnFoot)hunger=Math.min(100,hunger+dt*.025);
+ if(isOnFoot)fatigue=Math.min(100,fatigue+dt*.018);else if(engineOn)fatigue=Math.min(100,fatigue+dt*.009);
+ if(activeBuilding?.kind==='home'&&keys.has('KeyP'))fatigue=Math.max(0,fatigue-dt*28);
+ needsTick+=dt;if(needsTick<.25)return;needsTick=0;
+ const hv=$('hungerValue'),fv=$('fatigueValue'),mv=$('moneyValue'),hb=$('hungerBar'),fb=$('fatigueBar');
+ if(hv)hv.textContent=Math.round(hunger)+'%';if(fv)fv.textContent=Math.round(fatigue)+'%';if(mv)mv.textContent='₽ '+money;
+ if(hb)hb.style.width=hunger+'%';if(fb)fb.style.width=fatigue+'%';
+ if(hunger>85&&Math.round(hunger)%10===0){};
+}
+function buyFood(kind){
+ if(!activeBuilding||activeBuilding.kind!=='shop'){notify('ЗАЙДИ В ПРОДУКТОВЫЙ МАГАЗИН');return;}
+ const items={bread:[35,18],sandwich:[65,32],stew:[95,48],water:[20,5]};const item=items[kind];if(!item)return;
+ if(money<item[0]){notify('НЕ ХВАТАЕТ ДЕНЕГ');return;}
+ money-=item[0];hunger=Math.max(0,hunger-item[1]);notify('ПОКУПКА УСПЕШНА · СЫТОСТЬ '+Math.round(100-hunger)+'%');updateNeeds(0);
+}
+function openShop(){shopOpen=true;$('shopPanel')?.classList.add('open');}
+function closeShop(){shopOpen=false;$('shopPanel')?.classList.remove('open');}
+$('shopClose')?.addEventListener('click',closeShop);
+document.querySelectorAll('[data-food]').forEach(button=>button.addEventListener('click',()=>buyFood(button.dataset.food)));
+addEventListener('keydown',e=>{if(e.code==='Escape'&&shopOpen)closeShop();});
 let gameTime=0, promptText='';
 let toastTimer;
 function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200)}
@@ -555,11 +600,12 @@ function enterBuilding(b){
   if(!b)return;
   activeBuilding=b;b.exterior.visible=false;b.interior.visible=true;
   player.position.set(b.x,0,b.z);player.rotation.y=0;
-  notify('ТЫ ВОШЁЛ: '+b.name+' · E — ВЫЙТИ');
+  notify('ТЫ ВОШЁЛ: '+b.name+' · E — ВЫЙТИ'+(b.kind==='shop'?' · B — МАГАЗИН':b.kind==='home'?' · P — ОТДОХНУТЬ':''));
+ if(b.kind==='shop')openShop();
 }
 function leaveBuilding(){
   if(!activeBuilding)return;
-  const b=activeBuilding;b.interior.visible=false;b.exterior.visible=true;
+  const b=activeBuilding;if(b.kind==='shop')closeShop();b.interior.visible=false;b.exterior.visible=true;
   player.position.set(b.doorX,0,b.doorZ-1.2);activeBuilding=null;
   notify('ТЫ ВЫШЕЛ НА УЛИЦУ');
 }
@@ -599,6 +645,8 @@ addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   physicalKeys.add(e.code);keys.add(e.code);
   if(e.code==='KeyV'&&!e.repeat&&!isOnFoot)setCameraMode();
+  if(e.code==='KeyB'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='shop')openShop();
+  if(e.code==='KeyP'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='home'){fatigue=0;hunger=Math.min(100,hunger+12);notify('ТЫ ОТДОХНУЛ ДО УТРА · УСТАЛОСТЬ СБРОШЕНА');updateNeeds(0);}
   if(e.code==='Backspace'&&!e.repeat)resetCar();
   if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;ignitionOn=false;rpm=0;startRevTimer=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН · ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
   if(e.code==='KeyK'&&!e.repeat&&!isOnFoot){ignitionOn=!ignitionOn;if(!ignitionOn){engineOn=false;rpm=0;}notify(ignitionOn?'ЗАЖИГАНИЕ ВКЛЮЧЕНО':'ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
@@ -998,6 +1046,7 @@ function animate(){
   pollGamepad(dt);
   updateEngineRumble(dt);
   gameTime+=dt;
+  updateNeeds(dt);
   hoodHinge.rotation.x=smooth(hoodHinge.rotation.x,hoodOpen?.92:0,5,dt);
   trunkHinge.rotation.x=smooth(trunkHinge.rotation.x,trunkOpen?-.82:0,5,dt);
   inventoryProps.visible=trunkOpen;
@@ -1115,7 +1164,9 @@ function animate(){
     const f=(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0);
     const r=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0);
     const run=keys.has('ShiftLeft')||keys.has('ShiftRight');
-    const moveSpeed=run?5.2:2.6;
+    const tiredPenalty=fatigue>75?.55:fatigue>45?.78:1;
+    const hungryPenalty=hunger>85?.72:1;
+    const moveSpeed=(run?5.2:2.6)*tiredPenalty*hungryPenalty;
     const fx=-Math.sin(player.rotation.y),fz=-Math.cos(player.rotation.y);
     const rx=Math.cos(player.rotation.y),rz=-Math.sin(player.rotation.y);
     const mx=fx*f+rx*r,mz=fz*f+rz*r,mag=Math.hypot(mx,mz)||1;
@@ -1140,7 +1191,9 @@ function animate(){
         else{starterHold=0;notify('НЕТ БЕНЗИНА — СНАЧАЛА ЗАПРАВЬ КАНИСТРУ');}
       }
     }else if(!keys.has('KeyE')){starterHold=0;starterRod.visible=true;}
-    if(activeBuilding)updatePrompt(activeBuilding.name+' · WASD — ходить · Shift — бежать · E — выйти');
+    if(activeBuilding?.kind==='shop')updatePrompt('ГАСТРОНОМ · B — открыть товары · E — выйти');
+    else if(activeBuilding?.kind==='home')updatePrompt('ТВОЙ ДОМ · P — поспать и восстановить силы · E — выйти');
+    else if(activeBuilding)updatePrompt(activeBuilding.name+' · WASD — ходить · Shift — бежать · E — выйти');
     else if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
     else if(!activeBuilding&&Math.hypot(player.position.x-worldPoint(0,2.55).x,player.position.z-worldPoint(0,2.55).z)<2.0)updatePrompt(trunkOpen?(starterRodHeld?'E — положить ручку обратно в багажник':'E — взять ручку заводки из багажника'):'O — открыть багажник');
     else if(nearbyBuilding)updatePrompt('E — войти в '+nearbyBuilding.name);
@@ -1155,6 +1208,17 @@ function animate(){
     playerLegR.rotation.x=-Math.sin(gameTime*9)*((f||r)? .35:0);
     const kmh=Math.round(Math.abs(speed)*3.6);speedEl.textContent=String(kmh);setNeedle(speedNeedle,kmh,180);
     rpmEl.textContent=String(Math.round(rpm));setNeedle(rpmNeedle,rpm/1000,6);gearEl.textContent=gear===-1?'R':gear===0?'N':String(gear);
+  }
+  updateNeeds(dt);
+  // Scooter riders cruise along the boulevard. Overtaking one earns a small arcade bonus.
+  for(const scooter of scooters){
+    scooter.group.position.z-=scooter.speed*dt;
+    const dz=scooter.group.position.z-car.position.z;
+    if(!scooter.passed&&Math.abs(scooter.group.position.x-car.position.x)<2.7&&dz> -2.8&&dz< -1.0&&speed>scooter.speed+1.2){
+      scooter.passed=true;money+=100;notify('ОБГОН САМОКАТЧИКА! +₽100 · «ВОЛГА — ФИГНЯ?»');updateNeeds(0);
+    }
+    if(scooter.group.position.z<car.position.z-110){scooter.group.position.z=car.position.z+75+Math.random()*45;scooter.group.position.x=(Math.random()<.5?-1:1)*4.8;scooter.passed=false;}
+    scooter.group.rotation.y=0;
   }
   drawWorldMap();
   renderer.render(scene,camera);
