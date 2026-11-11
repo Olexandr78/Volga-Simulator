@@ -40,7 +40,7 @@
         <p class="wheel-preset-note">DirectInput: LED выключен, руль — ось X, педали — общая ось Y. XInput: LED включён, педали обычно идут как LT/RT. После применения проверь оси и кнопки в настройках ниже.</p>
         <div id="gamepadMappings" class="gamepad-mappings"></div>
         <button id="gamepadReset" class="gamepad-reset" type="button">СБРОСИТЬ МАППИНГ</button>
-        <small>Геймпады и рули с поддержкой браузерного Gamepad API. Можно назначить кнопки, ось поворота руля и отдельные оси педалей газа, тормоза и сцепления. Силовая обратная связь (force feedback) через обычный Gamepad API не поддерживается.</small>
+        <div class="rumble-row"><span>ВИБРАЦИЯ ДВИГАТЕЛЯ</span><button id="rumbleToggle" type="button" aria-pressed="false">ВЫКЛ</button><button id="rumbleTest" type="button">ТЕСТ</button></div><small>Вибрация работает только если контроллер сообщает браузеру поддержку rumble/haptics. Это вибромотор, не силовая обратная связь руля (Force Feedback).</small>
       </section>
       <div class="touch-controls">
         <div class="touch-steer"><button data-key="KeyA">◀ РУЛЬ</button><button data-key="KeyD">РУЛЬ ▶</button></div>
