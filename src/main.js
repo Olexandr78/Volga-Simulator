@@ -5,6 +5,42 @@ const $ = (id) => document.getElementById(id);
 const app = $('app');
 const speedEl = $('speed'), gearEl = $('gear'), gearNameEl = $('gearName');
 const rpmEl = $('rpm'), rpmBar = $('rpmBar'), speedBar = $('speedBar');
+const speedNeedle = $('speedNeedle'), rpmNeedle = $('rpmNeedle');
+function buildDialTicks(groupId, divisions, maxValue, labelEvery, redFrom = Infinity) {
+  const group = $(groupId);
+  if (!group) return;
+  const ns = 'http://www.w3.org/2000/svg';
+  const point = (radius, angle) => {
+    const a = (-135 + angle) * Math.PI / 180;
+    return [110 + Math.sin(a) * radius, 110 - Math.cos(a) * radius];
+  };
+  for (let i = 0; i <= divisions; i++) {
+    const angle = i / divisions * 270;
+    const major = i % labelEvery === 0;
+    const [x1,y1] = point(major ? 78 : 84, angle);
+    const [x2,y2] = point(major ? 91 : 89, angle);
+    const line = document.createElementNS(ns,'line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class','dial-tick' + (i / divisions * maxValue >= redFrom ? ' redline' : '') + (!major ? ' minor' : ''));
+    group.appendChild(line);
+    if (major) {
+      const [tx,ty] = point(65,angle);
+      const label = document.createElementNS(ns,'text');
+      label.setAttribute('x',tx); label.setAttribute('y',ty);
+      label.setAttribute('class','dial-label' + (i / divisions * maxValue >= redFrom ? ' redline' : ''));
+      label.textContent = String(Math.round(i / divisions * maxValue));
+      group.appendChild(label);
+    }
+  }
+}
+function setNeedle(needle, value, max) {
+  if (!needle) return;
+  const angle = -135 + THREE.MathUtils.clamp(value / max, 0, 1) * 270;
+  needle.style.transform = 'rotate(' + angle + 'deg)';
+}
+buildDialTicks('speedTicks',36,180,4);
+buildDialTicks('rpmTicks',30,6,5,5);
 const loading = $('loading'), toast = $('toast');
 
 const scene = new THREE.Scene();
@@ -1053,8 +1089,8 @@ function animate(){
     else{desiredCamera.set(car.position.x+sin*2,12,car.position.z+cos*2);targetLook.set(car.position.x,0,car.position.z);}
     camera.position.lerp(desiredCamera,1-Math.exp(-4.2*dt));camera.lookAt(targetLook);
     const kmh=Math.round(absSpeed*3.6);
-    speedEl.textContent=String(kmh);speedBar.style.width=Math.min(kmh/160*100,100)+'%';
-    rpmEl.textContent=String(Math.round(rpm/10)*10);rpmBar.style.width=Math.min(rpm/5500*100,100)+'%';
+    speedEl.textContent=String(kmh);speedBar.style.width=Math.min(kmh/180*100,100)+'%';setNeedle(speedNeedle,kmh,180);
+    rpmEl.textContent=String(Math.round(rpm/10)*10);rpmBar.style.width=Math.min(rpm/6000*100,100)+'%';setNeedle(rpmNeedle,rpm/1000,6);
     const shownGear=gear===-1?'R':gear===0?'N':String(gear);
     gearEl.textContent=shownGear;gearNameEl.textContent=shownGear==='R'?'ЗАДНИЙ ХОД':shownGear==='N'?'НЕЙТРАЛЬ':['','ПЕРВАЯ','ВТОРАЯ','ТРЕТЬЯ','ЧЕТВЁРТАЯ'][gear];
     if(audioContext&&engineOsc){
@@ -1108,8 +1144,8 @@ function animate(){
     playerBody.position.y=.88+Math.abs(Math.sin(gameTime*9))*((f||r)? .035:0);
     playerLegL.rotation.x=Math.sin(gameTime*9)*((f||r)? .35:0);
     playerLegR.rotation.x=-Math.sin(gameTime*9)*((f||r)? .35:0);
-    const kmh=Math.round(Math.abs(speed)*3.6);speedEl.textContent=String(kmh);
-    rpmEl.textContent=String(Math.round(rpm));gearEl.textContent=gear===-1?'R':gear===0?'N':String(gear);
+    const kmh=Math.round(Math.abs(speed)*3.6);speedEl.textContent=String(kmh);setNeedle(speedNeedle,kmh,180);
+    rpmEl.textContent=String(Math.round(rpm));setNeedle(rpmNeedle,rpm/1000,6);gearEl.textContent=gear===-1?'R':gear===0?'N':String(gear);
   }
   drawWorldMap();
   renderer.render(scene,camera);
