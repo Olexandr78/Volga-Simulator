@@ -280,3 +280,16 @@ body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
 
 /* SVG needles rotate around the actual dial hub at every responsive size. */
 .dial-needle{transform-box:view-box;transform-origin:50% 50%}
+
+
+/* Hard stop on phones: this simulator's manual gearbox needs simultaneous pedal controls. */
+#phoneBlock{display:none}
+html.phone-blocked,html.phone-blocked body{width:100%;height:100%;overflow:hidden;background:#101820}
+html.phone-blocked #app>*:not(#phoneBlock){display:none!important}
+html.phone-blocked #phoneBlock{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at 50% 25%,#263943 0,#101820 70%);color:#f4eddd;font-family:'Courier New',monospace}
+.phone-block-card{width:min(560px,100%);padding:clamp(22px,6vw,38px);border:1px solid #d8c7a088;border-radius:10px;background:linear-gradient(145deg,#1c292e,#11191d);box-shadow:0 20px 70px #0009;text-align:center}
+.phone-block-icon{display:grid;place-items:center;width:58px;height:58px;margin:0 auto 18px;border:2px solid #c84b3e;border-radius:50%;color:#e16c5c;font:bold 38px Georgia,serif}
+.phone-block-kicker{color:#c9b98a;font-size:10px;letter-spacing:.16em}
+.phone-block-card h1{margin:18px 0 14px;font-size:clamp(22px,6vw,31px);line-height:1.15;color:#f4eddd}
+.phone-block-card p{margin:0;color:#d1d0c7;font:14px/1.65 Arial,sans-serif}
+.phone-block-card .phone-block-note{margin-top:18px;padding-top:16px;border-top:1px solid #d8c7a044;color:#e2c98e;font-weight:700}
