@@ -242,3 +242,5 @@ body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
 .rumble-row span{flex:1;color:#e8ddc6}
 .rumble-row button{min-width:72px;padding:9px 12px;background:#303c37;color:#f4ead6;border:1px solid #c9b98a88;border-radius:4px;font:700 10px 'Courier New',monospace}
 .rumble-row button[aria-pressed="true"]{background:#526344;border-color:#c8d99a}
+
+.rumble-status{margin:5px 0 12px;padding:8px 10px;background:#111b18;color:#e9d7a9;border-left:3px solid #bda56f;font:10px/1.5 'Courier New',monospace;overflow-wrap:anywhere}
