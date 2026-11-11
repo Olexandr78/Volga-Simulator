@@ -663,6 +663,32 @@ try{
 }catch{}
 const gamepadStatus=$('gamepadStatus'),gamepadMappings=$('gamepadMappings'),gamepadPanel=$('gamepadPanel'),gamepadDeviceSelect=$('gamepadDevice'),gamepadPedalSelect=$('gamepadPedalDevice');
 function saveGamepadMap(){try{localStorage.setItem('volga-gamepad-map-v2',JSON.stringify({buttons:gamepadMap,steerAxis,gasAxis,brakeAxis,clutchAxis,deadzone:gamepadDeadzone,selectedIndex:selectedGamepadIndex,pedalIndex:selectedPedalGamepadIndex}));}catch{}}
+// EGW102 mapping from the manufacturer's manual: 270° wheel, X steering axis,
+// Y-axis split pedals in DirectInput, LT/RT triggers in XInput.
+const egw102Presets={
+ 'egw102-dinput':{
+  buttons:{...gamepadDefaults,gas:-1,brake:-1,clutch:4,handbrake:5,gear1:0,gear2:1,gear3:2,gear4:3,neutral:8,reverse:9,exit:10,camera:11,engineOff:9,ignition:8,choke:6,hood:10,trunk:11},
+  steerAxis:0,gasAxis:1,brakeAxis:-3,clutchAxis:-1,deadzone:.08
+ },
+ 'egw102-xinput':{
+  buttons:{...gamepadDefaults,gas:7,brake:6,clutch:4,handbrake:5,gear1:3,gear2:1,gear3:0,gear4:2,neutral:12,reverse:13,exit:8,camera:9,engineOff:9,ignition:8,choke:10,hood:11,trunk:14},
+  steerAxis:0,gasAxis:-1,brakeAxis:-1,clutchAxis:-1,deadzone:.08
+ }
+};
+function applyWheelPreset(){
+ const id=$('wheelPreset')?.value||'egw102-dinput',preset=egw102Presets[id];
+ if(!preset)return;
+ gamepadMap={...preset.buttons};steerAxis=preset.steerAxis;gasAxis=preset.gasAxis;
+ brakeAxis=preset.brakeAxis;clutchAxis=preset.clutchAxis;gamepadDeadzone=preset.deadzone;
+ captureGamepadAction=null;saveGamepadMap();
+ const gp=(navigator.getGamepads?.()||[]).find(p=>p&&p.index===selectedGamepadIndex);
+ renderGamepadMappings(gp?.axes.length||8);
+ if(gamepadStatus)gamepadStatus.textContent=id.endsWith('dinput')
+  ?'Пресет EGW102 DirectInput применён. Проверь ось X и педали на оси Y.'
+  :'Пресет EGW102 XInput применён. Проверь LT/RT и кнопки на своём экземпляре.';
+ notify('ПРЕСЕТ ESPERANZA EGW102 ПРИМЕНЁН');
+}
+$('applyWheelPreset')?.addEventListener('click',applyWheelPreset);
 function renderGamepadMappings(axisCount=8){
   if(!gamepadMappings)return;
   gamepadMappings.innerHTML='';
@@ -713,6 +739,7 @@ $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
 let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
 let gamepadGasValue=0,gamepadBrakeValue=0,gamepadClutchValue=0,gamepadChokeHeld=false;
+function buttonValue(gp,index){const b=gp.buttons[index];return b?THREE.MathUtils.clamp(Number(b.value)||0,0,1):0;}
 function buttonPressed(gp,index){const b=gp.buttons[index];return !!b&&(b.pressed||b.value>.55);}
 function decodeAxis(setting){return setting>=0?{index:setting,invert:false}:setting<=-2?{index:-setting-2,invert:true}:{index:-1,invert:false};}
 function axisPedal(gp,setting){
@@ -743,7 +770,9 @@ function pollGamepad(dt){
   }
   const pedalGp=selectedPedalGamepadIndex>=0?connected.find(p=>p.index===selectedPedalGamepadIndex):gp;
   const axisGas=pedalGp?axisPedal(pedalGp,gasAxis):0,axisBrake=pedalGp?axisPedal(pedalGp,brakeAxis):0,axisClutch=pedalGp?axisPedal(pedalGp,clutchAxis):0;
-  gamepadGasValue=axisGas;gamepadBrakeValue=axisBrake;gamepadClutchValue=axisClutch;
+  gamepadGasValue=Math.max(axisGas,buttonValue(gp,gamepadMap.gas));
+  gamepadBrakeValue=Math.max(axisBrake,buttonValue(gp,gamepadMap.brake));
+  gamepadClutchValue=Math.max(axisClutch,buttonValue(gp,gamepadMap.clutch));
   const nextVirtual=new Set();
   if(buttonPressed(gp,gamepadMap.gas))nextVirtual.add('KeyW');
   if(buttonPressed(gp,gamepadMap.brake))nextVirtual.add('KeyS');
