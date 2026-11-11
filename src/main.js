@@ -58,7 +58,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
 app.prepend(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xe8f1f2, 0x55584c, 1.75));
+const hemiLight=new THREE.HemisphereLight(0xe8f1f2, 0x55584c, 1.75);
+scene.add(hemiLight);
 const sun = new THREE.DirectionalLight(0xffedcf, 3.1);
 sun.position.set(-34, 55, 22);
 sun.castShadow = true;
@@ -443,11 +444,43 @@ for(const x of [-4.2,-1.5,1.5,4.2]){
  for(let row=0;row<3;row++)for(let n=0;n<4;n++)box(shopData.interior,[.22,.25,.28],[x+(n%2?-.08:.08),.35+row*.43,-1.7+n*1.05],mat([0xb84b37,0x6f8b4d,0xc6a24f,0x526d8c][(row+n)%4]),.025,2);
 }
 box(shopData.interior,[2.4,1.05,.65],[0,.53,3.0],mat(0x765b3e),.04,2);
-// Home furniture: bed, bedside table and a small wardrobe.
-box(homeData.interior,[2.8,.35,2.1],[0,.38,-1.6],mat(0x5b5147),.08,3);
-box(homeData.interior,[2.75,.18,1.15],[0,.62,-1.85],mat(0xd5d0c4),.06,3);
-box(homeData.interior,[.85,1.9,.8],[-3.2,.98,1.8],mat(0x76563d),.05,2);
-box(homeData.interior,[1.2,.45,.8],[3.0,.35,2.0],mat(0x6b5540),.06,2);
+// Советская квартира: паркет, ковёр, цветные обои, сервант, телевизор и кровать.
+const flat=homeData.interior;
+const parquet=mat(0x765038,0,0.78),woodDark=mat(0x493323,0,0.82),fabric=mat(0x8c3030,0,0.96),creamFabric=mat(0xd8c9a8,0,0.98);
+for(let x=-5.1;x<=5.1;x+=.72)box(flat,[.66,.025,8.5],[x,.18,0],parquet,.008,1);
+for(let z=-4.1;z<=4.1;z+=.72)box(flat,[10.2,.018,.025],[0,.195,z],woodDark,0,1);
+const wallpaperCanvas=document.createElement('canvas');wallpaperCanvas.width=256;wallpaperCanvas.height=256;
+const wp=wallpaperCanvas.getContext('2d');wp.fillStyle='#d5c9a6';wp.fillRect(0,0,256,256);
+for(let y=12;y<256;y+=32)for(let x=12;x<256;x+=32){wp.fillStyle='#9b6d59';wp.beginPath();wp.arc(x,y,5,0,Math.PI*2);wp.fill();wp.fillStyle='#71805a';wp.fillRect(x-1,y-12,2,8);wp.fillRect(x+5,y-2,7,2);}
+const wallpaper=new THREE.CanvasTexture(wallpaperCanvas);wallpaper.colorSpace=THREE.SRGBColorSpace;
+const wallpaperMat=new THREE.MeshStandardMaterial({map:wallpaper,roughness:1,side:THREE.DoubleSide});
+mesh(new THREE.PlaneGeometry(10.7,2.45),wallpaperMat,flat,[0,1.55,-4.48]);
+mesh(new THREE.PlaneGeometry(8.7,2.45),wallpaperMat,flat,[5.48,1.55,0],[0,-Math.PI/2,0]);
+mesh(new THREE.PlaneGeometry(8.7,2.45),wallpaperMat,flat,[-5.48,1.55,0],[0,Math.PI/2,0]);
+box(flat,[2.9,.38,2.15],[0,.39,-1.6],woodDark,.07,3);
+box(flat,[2.78,.18,1.75],[0,.66,-1.68],fabric,.05,3);
+box(flat,[.82,.13,.55],[0,.81,-2.25],creamFabric,.05,3);
+box(flat,[2.95,.85,.12],[0,.83,-2.72],mat(0x68452e),.035,2);
+box(flat,[.72,.72,.62],[-2.15,.38,-1.4],woodDark,.04,2);
+box(flat,[.78,.07,.68],[-2.15,.78,-1.4],mat(0x9b7951),.02,2);
+box(flat,[2.0,2.15,.62],[-3.75,1.25,2.0],woodDark,.05,3);
+box(flat,[1.82,.08,.08],[-3.75,1.65,1.66],mat(0xc8b98f,.35,.25),.01,1);
+box(flat,[1.82,.08,.08],[-3.75,.95,1.66],mat(0xc8b98f,.35,.25),.01,1);
+box(flat,[.86,1.65,.035],[-4.18,1.3,1.66],mat(0x8eafaa,.25,.2,{transparent:true,opacity:.48}),.01,1);
+box(flat,[.86,1.65,.035],[-3.32,1.3,1.66],mat(0x8eafaa,.25,.2,{transparent:true,opacity:.48}),.01,1);
+for(let i=0;i<4;i++)mesh(new THREE.CylinderGeometry(.13,.15,.22,12),mat(0xe5dfca,.15,.3),flat,[-4.25+i*.32,1.85,1.52]);
+box(flat,[2.35,.62,.65],[2.8,.48,-3.45],woodDark,.04,2);
+box(flat,[1.55,1.08,.9],[2.8,1.28,-3.45],black,.12,4);
+box(flat,[1.28,.78,.055],[2.8,1.32,-2.985],mat(0x344b4d,.08,.3,{emissive:0x172426}),.04,3);
+box(flat,[2.0,.12,1.2],[2.3,.85,1.5],mat(0x9b7951),.04,2);
+box(flat,[1.9,.025,1.12],[2.3,.92,1.5],mat(0xe0d8c3),.01,1);
+for(const x of [1.55,3.05])for(const z of [1.1,1.9])box(flat,[.09,.75,.09],[x,.38,z],woodDark,.01,1);
+box(flat,[2.5,1.75,.055],[1.8,1.65,4.42],mat(0x8c2929,0,1),.02,2);
+for(let y=.9;y<=2.4;y+=.18)box(flat,[2.25,.025,.025],[1.8,y,4.38],mat(0xd1b477),0,1);
+box(flat,[.65,.85,.05],[-1.9,2.0,-4.39],mat(0xddd0ad),.015,1);
+box(flat,[.35,.35,.07],[-1.9,2.0,-4.34],woodDark,.02,2);
+mesh(new THREE.CylinderGeometry(.28,.28,.08,24),mat(0xe6ddc8),flat,[0,2.85,0]);
+mesh(new THREE.CylinderGeometry(.55,.38,.22,20),mat(0xe5d9b9,.05,.3,{emissive:0x493a20}),flat,[0,2.62,0]);
 for(const x of [-3.8,3.8])box(grocery,[.12,2.3,.12],[x,1.2,-5.7],chrome,.02,2);
 
 // Front grille with vertical bars, emblem, headlights and indicators.
@@ -575,6 +608,26 @@ $('shopClose')?.addEventListener('click',closeShop);
 document.querySelectorAll('[data-food]').forEach(button=>button.addEventListener('click',()=>buyFood(button.dataset.food)));
 addEventListener('keydown',e=>{if(e.code==='Escape'&&shopOpen)closeShop();});
 let gameTime=0, promptText='';
+let dayMinutes=8*60+30;
+const daySky=new THREE.Color(0x9eabb0),nightSky=new THREE.Color(0x081321),dawnSky=new THREE.Color(0x9a716c);
+const dayFog=new THREE.Color(0x9eabb0),nightFog=new THREE.Color(0x101b2b);
+function updateDayNight(dt){
+ dayMinutes=(dayMinutes+dt*1.2)%1440;
+ const hour=dayMinutes/60,angle=(dayMinutes/1440)*Math.PI*2-Math.PI/2;
+ const sunHeight=Math.sin(angle),daylight=THREE.MathUtils.clamp((sunHeight+.10)/.48,0,1);
+ const twilight=THREE.MathUtils.clamp(1-Math.abs(sunHeight)*5,0,1)*(1-daylight);
+ sun.position.set(Math.cos(angle)*80,Math.max(-12,sunHeight*90),22);
+ sun.intensity=.08+daylight*3.05;
+ sun.color.setRGB(1,.72+daylight*.21,.55+daylight*.36);
+ hemiLight.intensity=.28+daylight*1.45;
+ const sky=nightSky.clone().lerp(dawnSky,twilight*.62).lerp(daySky,daylight);
+ scene.background.copy(sky);scene.fog.color.copy(nightFog).lerp(dayFog,daylight).lerp(dawnSky,twilight*.22);
+ renderer.toneMappingExposure=.78+daylight*.34;
+ lampGlow.emissiveIntensity=.12+(1-daylight)*2.2;
+ windowLit.emissiveIntensity=.08+(1-daylight)*1.25;
+ const clockEl=$('clockHud');if(clockEl){const hh=Math.floor(hour),mm=Math.floor((dayMinutes%60)/5)*5;clockEl.textContent=(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm+' · '+(hour>=6&&hour<19?'ДЕНЬ':'НОЧЬ');}
+}
+
 let toastTimer;
 function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200)}
 function setCameraMode(){cameraMode=(cameraMode+1)%4;notify(['КАМЕРА: СЗАДИ','КАМЕРА: КАПОТ','КАМЕРА: САЛОН','КАМЕРА: СВЕРХУ'][cameraMode])}
@@ -660,7 +713,11 @@ addEventListener('keydown',e=>{
   physicalKeys.add(e.code);keys.add(e.code);
   if(e.code==='KeyV'&&!e.repeat&&!isOnFoot)setCameraMode();
   if(e.code==='KeyB'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='shop')openShop();
-  if(e.code==='KeyP'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='home'){fatigue=0;hunger=Math.min(100,hunger+12);notify('ТЫ ОТДОХНУЛ ДО УТРА · УСТАЛОСТЬ СБРОШЕНА');updateNeeds(0);}
+  if(e.code==='KeyP'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='home'){
+    const atBed=Math.hypot(player.position.x,player.position.z+1.6)<2.25;
+    if(atBed){fatigue=0;hunger=Math.min(100,hunger+12);dayMinutes=7*60;notify('ТЫ ПРОСПАЛ ДО 07:00 · УСТАЛОСТЬ СБРОШЕНА');updateNeeds(0);}
+    else notify('ПОДОЙДИ К КРОВАТИ, ЧТОБЫ ЛЕЧЬ СПАТЬ');
+  }
   if(e.code==='Backspace'&&!e.repeat)resetCar();
   if(e.code==='KeyI'&&!e.repeat&&!isOnFoot){engineOn=false;ignitionOn=false;rpm=0;startRevTimer=0;notify('ДВИГАТЕЛЬ ЗАГЛУШЕН · ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
   if(e.code==='KeyK'&&!e.repeat&&!isOnFoot){ignitionOn=!ignitionOn;if(!ignitionOn){engineOn=false;rpm=0;}notify(ignitionOn?'ЗАЖИГАНИЕ ВКЛЮЧЕНО':'ЗАЖИГАНИЕ ВЫКЛЮЧЕНО');}
@@ -1060,6 +1117,7 @@ function animate(){
   pollGamepad(dt);
   updateEngineRumble(dt);
   gameTime+=dt;
+  updateDayNight(dt);
   updateNeeds(dt);
   hoodHinge.rotation.x=smooth(hoodHinge.rotation.x,hoodOpen?.92:0,5,dt);
   trunkHinge.rotation.x=smooth(trunkHinge.rotation.x,trunkOpen?-.82:0,5,dt);
@@ -1206,7 +1264,7 @@ function animate(){
       }
     }else if(!keys.has('KeyE')){starterHold=0;starterRod.visible=true;}
     if(activeBuilding?.kind==='shop')updatePrompt('ГАСТРОНОМ · B — открыть товары · E — выйти');
-    else if(activeBuilding?.kind==='home')updatePrompt('ТВОЙ ДОМ · P — поспать и восстановить силы · E — выйти');
+    else if(activeBuilding?.kind==='home')updatePrompt(Math.hypot(player.position.x,player.position.z+1.6)<2.25?'КРОВАТЬ · P — СПАТЬ ДО 07:00':'КВАРТИРА · ПОДОЙДИ К КРОВАТИ · E — ВЫЙТИ');
     else if(activeBuilding)updatePrompt(activeBuilding.name+' · WASD — ходить · Shift — бежать · E — выйти');
     else if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
     else if(!activeBuilding&&Math.hypot(player.position.x-worldPoint(0,2.55).x,player.position.z-worldPoint(0,2.55).z)<2.0)updatePrompt(trunkOpen?(starterRodHeld?'E — положить ручку обратно в багажник':'E — взять ручку заводки из багажника'):'O — открыть багажник');
