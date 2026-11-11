@@ -244,3 +244,36 @@ body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
 .rumble-row button[aria-pressed="true"]{background:#526344;border-color:#c8d99a}
 
 .rumble-status{margin:5px 0 12px;padding:8px 10px;background:#111b18;color:#e9d7a9;border-left:3px solid #bda56f;font:10px/1.5 'Courier New',monospace;overflow-wrap:anywhere}
+
+
+/* Vintage analogue instrument cluster inspired by the later GAZ-24 dials. */
+.hud{align-items:center;gap:12px}
+.analog-gauge{width:clamp(148px,17vw,220px);display:flex;flex-direction:column;align-items:center;padding:8px 10px 9px;background:rgba(9,14,17,.84);border:1px solid rgba(224,213,185,.38);border-radius:5px;box-shadow:0 8px 28px #0008;backdrop-filter:blur(12px)}
+.gauge-caption{align-self:stretch;text-align:center;color:#e1d5b8;font:10px 'Courier New',monospace;letter-spacing:.18em;margin:0 0 2px}
+.dial{display:block;width:100%;height:auto;overflow:visible}
+.dial-bezel{fill:#77766d;stroke:#d4c8aa;stroke-width:2}
+.dial-face{fill:#171a19;stroke:#090c0c;stroke-width:3}
+.dial-inner-ring{fill:none;stroke:#77796f;stroke-width:1.2;opacity:.7}
+.dial-tick{stroke:#e3ddc9;stroke-width:1.8;stroke-linecap:round}
+.dial-tick.minor{stroke:#a9a99c;stroke-width:1}
+.dial-tick.redline{stroke:#ad493c;stroke-width:2.2}
+.dial-label{fill:#eee8d8;font: bold 11px 'Courier New',monospace;text-anchor:middle;dominant-baseline:middle}
+.dial-label.redline{fill:#d46b5c}
+.dial-unit{fill:#d9c9a7;font: bold 10px 'Courier New',monospace;text-anchor:middle;letter-spacing:.05em}
+.dial-number{fill:#aaa99e;font:8px 'Courier New',monospace;text-anchor:middle;letter-spacing:.08em}
+.dial-needle{fill:none;stroke:#c84b3e;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;transform-origin:110px 110px;transform:rotate(-135deg);filter:drop-shadow(0 1px 2px #000)}
+.dial-hub{fill:#d8d0bd;stroke:#4d4c45;stroke-width:3}
+.gauge-digital{display:flex;align-items:baseline;gap:6px;margin-top:-2px;color:#f4eddd;font-family:'Courier New',monospace}
+.gauge-digital strong{font-size:20px;font-weight:600;line-height:1}
+.gauge-digital small{font-size:8px;color:#c9c2b2}
+.analog-gauge .speed-track,.analog-gauge .rpm-track{width:76%;height:2px;margin-top:7px}
+.gear-panel{min-width:82px;padding:15px 10px;background:rgba(9,14,17,.82);border:1px solid rgba(224,213,185,.3);border-radius:4px}
+@media(max-width:700px){
+ .hud{left:8px;bottom:148px;gap:5px}
+ .analog-gauge{width:clamp(112px,29vw,158px);padding:6px 5px}
+ .gauge-caption{font-size:8px}
+ .gauge-digital strong{font-size:15px}
+ .dial-label{font-size:11px}
+ .gear-panel{min-width:50px;padding:9px 5px}
+}
+@media(max-height:500px) and (min-width:701px){.analog-gauge{width:150px;padding:4px 7px}.hud{bottom:45px}}
