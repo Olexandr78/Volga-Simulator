@@ -236,3 +236,9 @@ body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
 .world-map canvas{width:100%;height:auto;display:block;margin:5px auto}
 .station-distance{font-size:9px;color:#e7c98e}
 @media(max-width:700px){.world-map{top:122px;right:8px;width:138px;padding:5px}.world-map-title,.station-distance{font-size:8px}}
+
+
+.rumble-row{display:flex;align-items:center;gap:8px;margin:12px 0;padding:10px;background:#18221f;border:1px solid #c9b98a55;border-radius:6px;font:11px 'Courier New',monospace;letter-spacing:.08em}
+.rumble-row span{flex:1;color:#e8ddc6}
+.rumble-row button{min-width:72px;padding:9px 12px;background:#303c37;color:#f4ead6;border:1px solid #c9b98a88;border-radius:4px;font:700 10px 'Courier New',monospace}
+.rumble-row button[aria-pressed="true"]{background:#526344;border-color:#c8d99a}
