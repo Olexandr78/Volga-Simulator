@@ -304,3 +304,7 @@ html.phone-blocked #phoneBlock{position:fixed;inset:0;z-index:2147483647;display
 /* In-game clock for the accelerated day/night cycle. */
 .clock-hud{position:fixed;z-index:8;right:20px;top:158px;padding:9px 13px;background:#0b1215dc;border:1px solid #d8c7a077;border-radius:6px;color:#f1e6ce;font:700 13px 'Courier New',monospace;letter-spacing:.08em;backdrop-filter:blur(8px)}
 @media(max-width:700px){.clock-hud{top:270px;right:8px;padding:7px 9px;font-size:10px}}
+
+/* One-mile drag race HUD. */
+.race-hud{display:none;position:fixed;z-index:12;left:50%;top:18px;transform:translateX(-50%);min-width:250px;padding:11px 16px;background:#111b20ed;border:1px solid #d9b65d;border-radius:7px;color:#f5e9ce;text-align:center;font:700 12px 'Courier New',monospace;box-shadow:0 8px 28px #0008}
+.race-hud.active{display:grid;gap:5px}.race-hud strong{color:#e8c66f;letter-spacing:.13em}.race-hud span{font-size:17px}.race-hud small{color:#c9c3b2;font-size:10px}
