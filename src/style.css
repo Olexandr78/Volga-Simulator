@@ -206,3 +206,33 @@ body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
   }
   body[data-control-mode="tablet"] .touch-controls{row-gap:6px}
 }
+
+
+/* Fixed landscape tablet cockpit layout: no flex wrapping into a stray third row. */
+@media (min-width:701px){
+ body[data-control-mode="tablet"] .touch-controls{display:grid;grid-template-columns:auto auto auto minmax(330px,1fr);grid-template-rows:auto auto;grid-template-areas:"steer gear actions utilities" "pedals gear actions utilities";align-items:end;justify-content:initial;gap:7px 9px;bottom:12px;left:14px;right:14px}
+ body[data-control-mode="tablet"] .touch-steer{grid-area:steer}
+ body[data-control-mode="tablet"] .touch-pedals{grid-area:pedals}
+ body[data-control-mode="tablet"] .touch-gear{grid-area:gear;align-self:end}
+ body[data-control-mode="tablet"] .touch-actions{grid-area:actions;display:flex;flex-direction:column;gap:6px;align-items:stretch}
+ body[data-control-mode="tablet"] .touch-actions button{width:100%;height:46px}
+ body[data-control-mode="tablet"] .touch-utilities{grid-area:utilities;display:grid;grid-template-columns:repeat(2,minmax(85px,1fr));align-content:end;gap:5px}
+ body[data-control-mode="tablet"] .touch-utilities button{height:42px;font-size:9px}
+ body[data-control-mode="tablet"] .hud{bottom:165px}
+}
+@media(max-width:700px){
+ body[data-control-mode="tablet"] .touch-controls{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"steer pedals" "gear gear" "actions actions" "utilities utilities";gap:5px;align-items:end;bottom:6px;left:6px;right:6px;max-height:48vh;overflow-y:auto;padding:5px;background:#10182066;border-radius:9px}
+ body[data-control-mode="tablet"] .touch-steer{grid-area:steer}
+ body[data-control-mode="tablet"] .touch-pedals{grid-area:pedals;justify-content:flex-end}
+ body[data-control-mode="tablet"] .touch-gear{grid-area:gear;grid-template-columns:repeat(3,minmax(40px,1fr));grid-template-rows:repeat(2,38px)}
+ body[data-control-mode="tablet"] .touch-gear button{width:100%;height:38px}
+ body[data-control-mode="tablet"] .touch-actions{grid-area:actions;justify-content:center;gap:4px}
+ body[data-control-mode="tablet"] .touch-utilities{grid-area:utilities;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ body[data-control-mode="tablet"] .touch-utilities button{width:100%;height:34px;padding:2px;font-size:7px}
+ body[data-control-mode="tablet"] .hud{bottom:calc(48vh + 12px)}
+}
+.world-map{position:fixed;z-index:5;top:158px;right:18px;width:220px;padding:8px;background:rgba(8,15,19,.88);border:1px solid #d8c7a088;border-radius:8px;box-shadow:0 8px 30px #0008;backdrop-filter:blur(10px);pointer-events:none}
+.world-map-title,.station-distance{font:10px 'Courier New',monospace;letter-spacing:.1em;color:#f1e6ce;text-align:center}
+.world-map canvas{width:100%;height:auto;display:block;margin:5px auto}
+.station-distance{font-size:9px;color:#e7c98e}
+@media(max-width:700px){.world-map{top:122px;right:8px;width:138px;padding:5px}.world-map-title,.station-distance{font-size:8px}}
