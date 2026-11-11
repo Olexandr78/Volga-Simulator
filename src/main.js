@@ -437,6 +437,17 @@ box(playerHome,[3.8,.5,.16],[0,3.2,-5.62],mat(0x8c2923),.03,2);
 const grocery=cityBuilding(-58,18,14,4.4,11,mat(0xb9a78c),0);
 const shopData=enterableBuildings[enterableBuildings.length-1];shopData.name='ПРОДУКТОВЫЙ МАГАЗИН';shopData.kind='shop';
 box(grocery,[5.2,.55,.16],[0,2.75,-5.62],mat(0x2c694c),.03,2);
+// Grocery shelves and a checkout counter are visible when the player enters.
+for(const x of [-4.2,-1.5,1.5,4.2]){
+ box(shopData.interior,[.32,1.65,5.2],[x,.85,-.1],mat(0x765b3e),.04,2);
+ for(let row=0;row<3;row++)for(let n=0;n<4;n++)box(shopData.interior,[.22,.25,.28],[x+(n%2?-.08:.08),.35+row*.43,-1.7+n*1.05],mat([0xb84b37,0x6f8b4d,0xc6a24f,0x526d8c][(row+n)%4]),.025,2);
+}
+box(shopData.interior,[2.4,1.05,.65],[0,.53,3.0],mat(0x765b3e),.04,2);
+// Home furniture: bed, bedside table and a small wardrobe.
+box(homeData.interior,[2.8,.35,2.1],[0,.38,-1.6],mat(0x5b5147),.08,3);
+box(homeData.interior,[2.75,.18,1.15],[0,.62,-1.85],mat(0xd5d0c4),.06,3);
+box(homeData.interior,[.85,1.9,.8],[-3.2,.98,1.8],mat(0x76563d),.05,2);
+box(homeData.interior,[1.2,.45,.8],[3.0,.35,2.0],mat(0x6b5540),.06,2);
 for(const x of [-3.8,3.8])box(grocery,[.12,2.3,.12],[x,1.2,-5.7],chrome,.02,2);
 
 // Front grille with vertical bars, emblem, headlights and indicators.
@@ -528,13 +539,16 @@ let mileageKm=42150, fuelFlow=0;
 let hunger=12,fatigue=8,money=350,needsTick=0,shopOpen=false;
 const scooters=[];
 function createScooter(z,index){
- const g=new THREE.Group();scene.add(g);g.position.set(index%2?4.8:-4.8,0,z);
+ const g=new THREE.Group();scene.add(g);g.position.set(index%2?3.0:-3.0,0,z);
  const frame=mat(index%2?0x263d65:0x9b3f32,.25,.45),wheel=mat(0x17191a,0,.9),metal=mat(0x9ca5a5,.8,.3);
  for(const wz of [-.48,.48]){const w=mesh(new THREE.TorusGeometry(.19,.045,8,16),wheel,g,[0,.2,wz],[Math.PI/2,0,0]);mesh(new THREE.CylinderGeometry(.025,.025,.08,10),metal,g,[0,.2,wz],[Math.PI/2,0,0]);}
  box(g,[.12,.08,.8],[0,.38,0],frame,.025,2);box(g,[.08,.42,.1],[0,.62,-.08],frame,.02,2);box(g,[.38,.08,.12],[0,.88,-.08],black,.02,2);
  const rider=mesh(new THREE.CapsuleGeometry(.13,.48,3,6),mat(index%2?0x394d72:0x5b4b38),g,[0,1.22,.02]);sphere(g,[0,1.58,.02],[.16,.17,.16],mat(0xc69b78));
  box(g,[.24,.08,.12],[0,1.78,-.05],mat(0x282c2e),.04,2);
- const taunt=mesh(new THREE.BoxGeometry(1.5,.28,.04),mat(0xf1e5c7),g,[0,2.0,.05]);taunt.visible=false;
+ const bubbleCanvas=document.createElement('canvas');bubbleCanvas.width=320;bubbleCanvas.height=80;
+ const bubbleCtx=bubbleCanvas.getContext('2d');bubbleCtx.fillStyle='#f1e5c7';bubbleCtx.strokeStyle='#342f28';bubbleCtx.lineWidth=7;bubbleCtx.beginPath();bubbleCtx.roundRect(5,5,310,65,13);bubbleCtx.fill();bubbleCtx.stroke();bubbleCtx.fillStyle='#342f28';bubbleCtx.font='bold 25px Arial';bubbleCtx.textAlign='center';bubbleCtx.fillText('ВОЛГА? ФИГНЯ!',160,47);
+ const bubbleTexture=new THREE.CanvasTexture(bubbleCanvas);bubbleTexture.colorSpace=THREE.SRGBColorSpace;
+ const taunt=new THREE.Sprite(new THREE.SpriteMaterial({map:bubbleTexture,transparent:true,depthTest:false}));taunt.position.set(0,2.15,0);taunt.scale.set(1.8,.46,1);g.add(taunt);
  scooters.push({group:g,speed:5.2+index*.35,passed:false,taunt});
 }
 for(let i=0;i<4;i++)createScooter(-55-i*48,i);
@@ -1209,15 +1223,14 @@ function animate(){
     const kmh=Math.round(Math.abs(speed)*3.6);speedEl.textContent=String(kmh);setNeedle(speedNeedle,kmh,180);
     rpmEl.textContent=String(Math.round(rpm));setNeedle(rpmNeedle,rpm/1000,6);gearEl.textContent=gear===-1?'R':gear===0?'N':String(gear);
   }
-  updateNeeds(dt);
   // Scooter riders cruise along the boulevard. Overtaking one earns a small arcade bonus.
   for(const scooter of scooters){
     scooter.group.position.z-=scooter.speed*dt;
     const dz=scooter.group.position.z-car.position.z;
-    if(!scooter.passed&&Math.abs(scooter.group.position.x-car.position.x)<2.7&&dz> -2.8&&dz< -1.0&&speed>scooter.speed+1.2){
+    if(!scooter.passed&&Math.abs(scooter.group.position.x-car.position.x)<3.4&&dz> -2.8&&dz< -1.0&&speed>scooter.speed+1.2){
       scooter.passed=true;money+=100;notify('ОБГОН САМОКАТЧИКА! +₽100 · «ВОЛГА — ФИГНЯ?»');updateNeeds(0);
     }
-    if(scooter.group.position.z<car.position.z-110){scooter.group.position.z=car.position.z+75+Math.random()*45;scooter.group.position.x=(Math.random()<.5?-1:1)*4.8;scooter.passed=false;}
+    if(scooter.group.position.z<car.position.z-110){scooter.group.position.z=car.position.z+75+Math.random()*45;scooter.group.position.x=(Math.random()<.5?-1:1)*3.0;scooter.passed=false;}
     scooter.group.rotation.y=0;
   }
   drawWorldMap();
