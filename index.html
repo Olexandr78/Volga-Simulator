@@ -24,9 +24,37 @@
       </header>
       <section class="vehicle-info"><span>ГОРЬКОВСКИЙ АВТОМОБИЛЬНЫЙ ЗАВОД</span><strong>24—10</strong><small>2.4 · БЕНЗИН · ЗАДНИЙ ПРИВОД · 4-СТУПЕНЧАТАЯ МЕХАНИКА</small></section>
       <section class="hud">
-        <div class="speed-panel"><span class="label">СКОРОСТЬ</span><div><strong id="speed">0</strong><small>КМ/Ч</small></div><div class="speed-track"><i id="speedBar"></i></div></div>
+        <div class="analog-gauge speed-gauge">
+          <span class="gauge-caption">СКОРОСТЬ</span>
+          <svg class="dial" viewBox="0 0 220 220" role="img" aria-label="Стрелочный спидометр, километров в час">
+            <circle class="dial-bezel" cx="110" cy="110" r="105"/>
+            <circle class="dial-face" cx="110" cy="110" r="98"/>
+            <path class="dial-inner-ring" d="M35 160 A91 91 0 1 1 185 160"/>
+            <g id="speedTicks"></g>
+            <text class="dial-unit" x="110" y="151">КМ/Ч</text>
+            <text class="dial-number" x="110" y="174">ГАЗ · 24—10</text>
+            <path id="speedNeedle" class="dial-needle" d="M110 119 L110 34"/>
+            <circle class="dial-hub" cx="110" cy="110" r="9"/>
+          </svg>
+          <div class="gauge-digital"><strong id="speed">0</strong><small>КМ/Ч</small></div>
+          <div class="speed-track"><i id="speedBar"></i></div>
+        </div>
         <div class="gear-panel"><span class="label">МКПП · 4 СТУПЕНИ</span><strong id="gear">N</strong><small id="gearName">НЕЙТРАЛЬ</small></div>
-        <div class="rpm-panel"><span class="label">ОБОРОТЫ ДВИГАТЕЛЯ</span><div class="rpm-value"><strong id="rpm">850</strong><small>ОБ/МИН</small></div><div class="rpm-track"><i id="rpmBar"></i></div></div>
+        <div class="analog-gauge rpm-gauge">
+          <span class="gauge-caption">ТАХОМЕТР</span>
+          <svg class="dial" viewBox="0 0 220 220" role="img" aria-label="Стрелочный тахометр, обороты в минуту">
+            <circle class="dial-bezel" cx="110" cy="110" r="105"/>
+            <circle class="dial-face" cx="110" cy="110" r="98"/>
+            <path class="dial-inner-ring" d="M35 160 A91 91 0 1 1 185 160"/>
+            <g id="rpmTicks"></g>
+            <text class="dial-unit" x="110" y="151">×1000 ОБ/МИН</text>
+            <text class="dial-number" x="110" y="174">ЗМЗ · 24—10</text>
+            <path id="rpmNeedle" class="dial-needle" d="M110 119 L110 34"/>
+            <circle class="dial-hub" cx="110" cy="110" r="9"/>
+          </svg>
+          <div class="gauge-digital"><strong id="rpm">850</strong><small>ОБ/МИН</small></div>
+          <div class="rpm-track"><i id="rpmBar"></i></div>
+        </div>
       </section>
       <div class="help"><kbd>W</kbd> ГАЗ <i></i> <kbd>S</kbd> ТОРМОЗ <i></i> <kbd>A/D</kbd> РУЛЬ <i></i> <kbd>C</kbd> СЦЕПЛЕНИЕ <i></i> <kbd>1–4</kbd> ПРЯМОЙ ВЫБОР <i></i> <kbd>SHIFT</kbd> ВЫШЕ <i></i> <kbd>CTRL</kbd> НИЖЕ <i></i> <kbd>0</kbd> НЕЙТРАЛЬ <i></i> <kbd>X</kbd> ЗАДНЯЯ <i></i> <kbd>SPACE</kbd> РУЧНИК <i></i> <kbd>E</kbd> УДЕРЖИВАТЬ — СТАРТЕР / КОРОТКО — ВЫХОД <i></i> <kbd>I</kbd> ЗАГЛУШИТЬ <i></i> <kbd>R</kbd> АЗС <i></i> <kbd>V</kbd> КАМЕРА <i></i> <kbd>K</kbd> ЗАЖИГАНИЕ <i></i> <kbd>Z</kbd> ПОДСОС <i></i> <kbd>H</kbd> КАПОТ <i></i> <kbd>O</kbd> БАГАЖНИК</div>
       <div id="gamePrompt" class="game-prompt">WASD — ехать · E — выйти</div>
