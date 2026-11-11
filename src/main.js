@@ -668,6 +668,14 @@ document.querySelectorAll('.touch-controls [data-key]').forEach(button=>{
   button.addEventListener('dragstart',e=>e.preventDefault());
 });
 
+// Phone devices are deliberately blocked: the manual-transmission controls are not safe or practical on a small touchscreen.
+const isPhoneDevice=!!(navigator.userAgentData?.mobile || /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(navigator.userAgent));
+if(isPhoneDevice){
+  document.documentElement.classList.add('phone-blocked');
+  // Stop the simulation loop from consuming CPU/GPU on a blocked phone.
+  window.__VOLGA_PHONE_BLOCKED__=true;
+}
+
 // Explicit PC/tablet mode switch. Keyboard remains active in either mode.
 const controlModeButton=$('controlModeButton');
 const controlModeStorageKey='volga-control-mode-v2';
@@ -984,6 +992,7 @@ const gearRatios=[0,3.5,2.26,1.45,1.0,.82];
 const maxSpeed=42; // m/s, approximate road speed cap
 function smooth(current,target,rate,dt){return THREE.MathUtils.damp(current,target,rate,dt)}
 function animate(){
+  if(window.__VOLGA_PHONE_BLOCKED__)return;
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.035);
   pollGamepad(dt);
