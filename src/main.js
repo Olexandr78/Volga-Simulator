@@ -183,6 +183,12 @@ for(const z of [16.5,23.5]){
   tube(scene,[[stationX+.4,1.6,z],[stationX+.9,1.8,z+.4],[stationX+1.1,.35,z+.7]],.035,black);
 }
 cityBuilding(stationX-14,stationZ,8,3.6,6,mat(0x283c4b),0);
+const fuelSign=new THREE.Group();scene.add(fuelSign);fuelSign.position.set(stationX-12,0,stationZ-8);
+mesh(new THREE.CylinderGeometry(.16,.2,7,10),darkChrome,fuelSign,[0,3.5,0]);
+box(fuelSign,[3.8,1.65,.28],[0,6.6,0],mat(0xa52a22),.12,4);
+box(fuelSign,[3.35,1.2,.08],[0,6.62,-.17],mat(0xf0e4c5),.06,3);
+mesh(new THREE.PlaneGeometry(3.1,.78),mat(0x9b2924,0,.4,{emissive:0x35100a}),fuelSign,[0,6.65,-.225]);
+sphere(fuelSign,[0,7.65,0],[.22,.22,.22],mat(0xffd36a,.1,.2,{emissive:0x8b5a12}));
 box(scene,[6,.8,.08],[stationX-14,2.5,stationZ-3.05],mat(0x9c2525),.02,2);
 // Фонари, берёзы, автобусная остановка и таксофон.
 for(let z=-280;z<=280;z+=55){
@@ -451,9 +457,10 @@ function makeJerryCan(x,z,color){
   box(can,[.13,.12,.08],[.18,.18,0],mat(0x242729),.02,2);
   return can;
 }
-const fullCanModel=makeJerryCan(-.38,1.72,0x9b2924);
-const emptyCanModel=makeJerryCan(.38,1.72,0x8b8e8b);
-const starterRod=mesh(new THREE.CylinderGeometry(.025,.025,.85,8),chrome,inventoryProps,[0,1.65,1.95],[0,0,Math.PI/2]);
+const fullCanModel=makeJerryCan(-.38,1.31,0x9b2924);
+const emptyCanModel=makeJerryCan(.38,1.31,0x8b8e8b);
+const starterRod=mesh(new THREE.CylinderGeometry(.025,.025,.85,8),chrome,inventoryProps,[0,1.31,1.83],[0,0,Math.PI/2]);
+let starterRodHeld=false;
 
 // Exhaust tail pipe.
 tube(body,[[.45,.45,1.65],[.45,.32,1.95],[.45,.3,2.28],[.45,.3,2.48]],.035,darkChrome);
@@ -482,6 +489,8 @@ const playerBody=mesh(new THREE.CapsuleGeometry(.28,.82,4,8),mat(0x303c4a),playe
 const playerHead=sphere(player,[0,1.55,0],[.23,.25,.23],mat(0xc69b78));
 const playerLegL=mesh(new THREE.CylinderGeometry(.09,.1,.65,8),mat(0x252a30),player,[-.13,.34,0]);
 const playerLegR=mesh(new THREE.CylinderGeometry(.09,.1,.65,8),mat(0x252a30),player,[.13,.34,0]);
+const heldStarterRod=mesh(new THREE.CylinderGeometry(.025,.025,.85,8),chrome,player,[.38,1.05,-.28],[0,0,Math.PI/2]);
+heldStarterRod.visible=false;
 player.visible=false;
 const prompt=$('gamePrompt');
 function updatePrompt(text){if(prompt)prompt.textContent=text;}
@@ -568,8 +577,12 @@ addEventListener('keydown',e=>{
     if(!isOnFoot){if(engineOn)exitCar();}
     else if(activeBuilding)leaveBuilding();
     else {
-      const door=worldPoint(-1.65,.15);
-      if(Math.hypot(player.position.x-door.x,player.position.z-door.z)<1.9)enterCar();
+      const door=worldPoint(-1.65,.15),boot=worldPoint(0,2.55);
+      if(Math.hypot(player.position.x-boot.x,player.position.z-boot.z)<2.0){
+        if(!trunkOpen)notify('СНАЧАЛА ОТКРОЙ БАГАЖНИК (O)');
+        else if(!starterRodHeld){starterRodHeld=true;starterRod.visible=false;heldStarterRod.visible=true;notify('РУЧКА ЗАВОДА ВЗЯТА ИЗ БАГАЖНИКА · ИДИ К РАДИАТОРУ');}
+        else{starterRodHeld=false;starterRod.visible=true;heldStarterRod.visible=false;notify('РУЧКА ЗАВОДА ПОЛОЖЕНА В БАГАЖНИК');}
+      }else if(Math.hypot(player.position.x-door.x,player.position.z-door.z)<1.9)enterCar();
       else enterBuilding(nearestBuilding());
     }
   }
@@ -787,6 +800,24 @@ function startEngineAudio(){
 addEventListener('pointerdown',startEngineAudio,{once:true});
 addEventListener('keydown',startEngineAudio,{once:true});
 
+
+const mapCanvas=$('worldMapCanvas'),mapCtx=mapCanvas?.getContext('2d'),stationDistanceEl=$('stationDistance');
+function drawWorldMap(){
+ if(!mapCtx)return;
+ const w=mapCanvas.width,h=mapCanvas.height,scale=.78;
+ mapCtx.clearRect(0,0,w,h);mapCtx.fillStyle='#25352d';mapCtx.fillRect(0,0,w,h);
+ mapCtx.strokeStyle='#778078';mapCtx.lineWidth=7;
+ for(let x=-120;x<=120;x+=30){const px=w/2+(x-car.position.x)*scale;mapCtx.beginPath();mapCtx.moveTo(px,0);mapCtx.lineTo(px,h);mapCtx.stroke();}
+ for(let z=-165;z<=135;z+=30){const py=h/2+(z-car.position.z)*scale;mapCtx.beginPath();mapCtx.moveTo(0,py);mapCtx.lineTo(w,py);mapCtx.stroke();}
+ const sx=w/2+(stationX-car.position.x)*scale,sy=h/2+(stationZ-car.position.z)*scale;
+ mapCtx.fillStyle='#f1c66e';mapCtx.beginPath();mapCtx.arc(sx,sy,9,0,Math.PI*2);mapCtx.fill();
+ mapCtx.fillStyle='#49251a';mapCtx.font='bold 12px monospace';mapCtx.textAlign='center';mapCtx.fillText('АЗС',sx,sy-14);
+ mapCtx.save();mapCtx.translate(w/2,h/2);mapCtx.rotate(-car.rotation.y);
+ mapCtx.fillStyle='#f5f1e7';mapCtx.beginPath();mapCtx.moveTo(0,-12);mapCtx.lineTo(8,9);mapCtx.lineTo(0,5);mapCtx.lineTo(-8,9);mapCtx.closePath();mapCtx.fill();mapCtx.restore();
+ const dist=Math.round(Math.hypot(stationX-car.position.x,stationZ-car.position.z));
+ if(stationDistanceEl)stationDistanceEl.textContent='АЗС · '+dist+' м';
+}
+
 const clock=new THREE.Clock();
 const forward=new THREE.Vector3(), desiredCamera=new THREE.Vector3(), targetLook=new THREE.Vector3();
 const cameraOffset=new THREE.Vector3();
@@ -800,6 +831,8 @@ function animate(){
   gameTime+=dt;
   hoodHinge.rotation.x=smooth(hoodHinge.rotation.x,hoodOpen?.92:0,5,dt);
   trunkHinge.rotation.x=smooth(trunkHinge.rotation.x,trunkOpen?-.82:0,5,dt);
+  inventoryProps.visible=trunkOpen;
+  starterRod.visible=trunkOpen&&!starterRodHeld;
   if(!isOnFoot){
     const keyboardThrottle=keys.has('KeyW')||keys.has('ArrowUp');
     const chokeControlHeld=keys.has('KeyZ')||gamepadChokeHeld;
@@ -929,8 +962,8 @@ function animate(){
     const nearbyBuilding=!activeBuilding?nearestBuilding():null;
     const front=worldPoint(0,-2.8);
     const nearFront=!activeBuilding&&Math.hypot(player.position.x-front.x,player.position.z-front.z)<2.1;
-    if(!activeBuilding&&nearFront&&keys.has('KeyE')&&!engineOn){
-      starterRod.visible=false;
+    if(!activeBuilding&&nearFront&&keys.has('KeyE')&&!engineOn&&starterRodHeld){
+      heldStarterRod.visible=true;
       starterHold+=dt;
       updatePrompt('РУЧКА ЗАВОДА: УДЕРЖИВАЙ E '+Math.min(100,Math.round(starterHold/2.4*100))+'%');
       if(starterHold>=2.4){
@@ -940,9 +973,10 @@ function animate(){
     }else if(!keys.has('KeyE')){starterHold=0;starterRod.visible=true;}
     if(activeBuilding)updatePrompt(activeBuilding.name+' · WASD — ходить · Shift — бежать · E — выйти');
     else if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
+    else if(!activeBuilding&&Math.hypot(player.position.x-worldPoint(0,2.55).x,player.position.z-worldPoint(0,2.55).z)<2.0)updatePrompt(trunkOpen?(starterRodHeld?'E — положить ручку обратно в багажник':'E — взять ручку заводки из багажника'):'O — открыть багажник');
     else if(nearbyBuilding)updatePrompt('E — войти в '+nearbyBuilding.name);
     else if(!nearFront)updatePrompt('WASD — идти · Shift — бежать · Подойди к передку и удерживай E, чтобы завести ручкой');
-    if(nearFront&&!engineOn&&starterHold===0)updatePrompt('У РАДИАТОРА: удерживай E 2.4 секунды — завести ручкой');
+    if(nearFront&&!engineOn&&starterHold===0)updatePrompt(starterRodHeld?'РУЧКА В РУКАХ: УДЕРЖИВАЙ E 2.4 СЕКУНДЫ — ЗАВЕСТИ':'НУЖНА РУЧКА: ОТКРОЙ БАГАЖНИК (O) И ВОЗЬМИ ЕЁ (E)');
     const footCameraDistance=activeBuilding?THREE.MathUtils.clamp(activeBuilding.d*.22,1.7,3.0):5;
     const footCameraHeight=activeBuilding?2.15:3.0;
     camera.position.lerp(new THREE.Vector3(player.position.x+Math.sin(player.rotation.y)*footCameraDistance,footCameraHeight,player.position.z+Math.cos(player.rotation.y)*footCameraDistance),1-Math.exp(-5*dt));
@@ -953,6 +987,7 @@ function animate(){
     const kmh=Math.round(Math.abs(speed)*3.6);speedEl.textContent=String(kmh);
     rpmEl.textContent=String(Math.round(rpm));gearEl.textContent=gear===-1?'R':gear===0?'N':String(gear);
   }
+  drawWorldMap();
   renderer.render(scene,camera);
 }
 
