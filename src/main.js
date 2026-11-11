@@ -1178,6 +1178,18 @@ function drawWorldMap(){
  if(!mapCtx)return;
  const w=mapCanvas.width,h=mapCanvas.height,scale=.78;
  mapCtx.clearRect(0,0,w,h);mapCtx.fillStyle='#25352d';mapCtx.fillRect(0,0,w,h);
+ if(raceActive){
+  const top=18,bottom=h-18,center=w/2,progress=Math.max(0,Math.min(1,(raceStartZ-car.position.z)/raceLength)),rivalProgress=Math.max(0,Math.min(1,(raceStartZ-rivalRaceZ)/raceLength));
+  mapCtx.fillStyle='#30383b';mapCtx.fillRect(center-36,top,72,bottom-top);
+  mapCtx.strokeStyle='#d6d2c5';mapCtx.lineWidth=2;mapCtx.setLineDash([9,8]);mapCtx.beginPath();mapCtx.moveTo(center,top);mapCtx.lineTo(center,bottom);mapCtx.stroke();mapCtx.setLineDash([]);
+  mapCtx.strokeStyle='#e3c36d';mapCtx.lineWidth=4;mapCtx.beginPath();mapCtx.moveTo(center-36,top);mapCtx.lineTo(center+36,top);mapCtx.moveTo(center-36,bottom);mapCtx.lineTo(center+36,bottom);mapCtx.stroke();
+  mapCtx.fillStyle='#e8c66f';mapCtx.font='bold 11px monospace';mapCtx.textAlign='center';mapCtx.fillText('СТАРТ',center,top+13);mapCtx.fillText('ФИНИШ',center,bottom-5);
+  const py=bottom-progress*(bottom-top),ry=bottom-rivalProgress*(bottom-top);
+  mapCtx.fillStyle='#f4eee0';mapCtx.beginPath();mapCtx.arc(center-13,py,7,0,Math.PI*2);mapCtx.fill();
+  mapCtx.fillStyle='#e28c45';mapCtx.beginPath();mapCtx.arc(center+13,ry,7,0,Math.PI*2);mapCtx.fill();
+  if(stationDistanceEl)stationDistanceEl.textContent='ДРАГ · '+Math.round(progress*raceLength)+' м';
+  return;
+ }
  mapCtx.strokeStyle='#778078';mapCtx.lineWidth=7;
  for(let x=-120;x<=120;x+=30){const px=w/2+(x-car.position.x)*scale;mapCtx.beginPath();mapCtx.moveTo(px,0);mapCtx.lineTo(px,h);mapCtx.stroke();}
  for(let z=-165;z<=135;z+=30){const py=h/2+(z-car.position.z)*scale;mapCtx.beginPath();mapCtx.moveTo(0,py);mapCtx.lineTo(w,py);mapCtx.stroke();}
