@@ -559,15 +559,15 @@ function updateNeeds(dt){
  if(activeBuilding?.kind==='home'&&keys.has('KeyP'))fatigue=Math.max(0,fatigue-dt*28);
  needsTick+=dt;if(needsTick<.25)return;needsTick=0;
  const hv=$('hungerValue'),fv=$('fatigueValue'),mv=$('moneyValue'),hb=$('hungerBar'),fb=$('fatigueBar');
- if(hv)hv.textContent=Math.round(hunger)+'%';if(fv)fv.textContent=Math.round(fatigue)+'%';if(mv)mv.textContent='₽ '+money;
+ if(hv)hv.textContent=Math.round(hunger)+'%';if(fv)fv.textContent=Math.round(fatigue)+'%';if(mv)mv.textContent='₴ '+money;
  if(hb)hb.style.width=hunger+'%';if(fb)fb.style.width=fatigue+'%';
  if(hunger>85&&Math.round(hunger)%10===0){};
 }
 function buyFood(kind){
  if(!activeBuilding||activeBuilding.kind!=='shop'){notify('ЗАЙДИ В ПРОДУКТОВЫЙ МАГАЗИН');return;}
  const items={bread:[35,18],sandwich:[65,32],stew:[95,48],water:[20,5]};const item=items[kind];if(!item)return;
- if(money<item[0]){notify('НЕ ХВАТАЕТ ДЕНЕГ');return;}
- money-=item[0];hunger=Math.max(0,hunger-item[1]);notify('ПОКУПКА УСПЕШНА · СЫТОСТЬ '+Math.round(100-hunger)+'%');updateNeeds(0);
+ if(money<item[0]){notify('НЕ ВИСТАЧАЄ ГРОШЕЙ');return;}
+ money-=item[0];hunger=Math.max(0,hunger-item[1]);notify('ПОКУПКУ ЗДІЙСНЕНО · СИТІСТЬ '+Math.round(100-hunger)+'%');updateNeeds(0);
 }
 function openShop(){shopOpen=true;$('shopPanel')?.classList.add('open');}
 function closeShop(){shopOpen=false;$('shopPanel')?.classList.remove('open');}
@@ -1228,7 +1228,7 @@ function animate(){
     scooter.group.position.z-=scooter.speed*dt;
     const dz=scooter.group.position.z-car.position.z;
     if(!scooter.passed&&Math.abs(scooter.group.position.x-car.position.x)<3.4&&dz> -2.8&&dz< -1.0&&speed>scooter.speed+1.2){
-      scooter.passed=true;money+=100;notify('ОБГОН САМОКАТЧИКА! +₽100 · «ВОЛГА — ФИГНЯ?»');updateNeeds(0);
+      scooter.passed=true;money+=100;notify('ОБІГНАНО САМОКАТНИКА! +₴100 · «ВОЛГА — ФІГНЯ?»');updateNeeds(0);
     }
     if(scooter.group.position.z<car.position.z-110){scooter.group.position.z=car.position.z+75+Math.random()*45;scooter.group.position.x=(Math.random()<.5?-1:1)*3.0;scooter.passed=false;}
     scooter.group.rotation.y=0;
