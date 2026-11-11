@@ -36,6 +36,8 @@
         <p id="gamepadStatus">Подключи контроллер, обнови список и выбери именно его. Клавиатура и мышь автоматически не выбираются.</p>
         <label class="gamepad-device-row"><span>Руль / геймпад</span><select id="gamepadDevice"><option value="">— ВЫБЕРИ КОНТРОЛЛЕР —</option></select><button id="gamepadRefresh" type="button">ОБНОВИТЬ</button></label>
         <label class="gamepad-device-row"><span>Отдельные педали</span><select id="gamepadPedalDevice"><option value="">Педали в том же устройстве</option></select><span></span></label>
+        <div class="gamepad-device-row egw-preset-row"><span>Пресет руля</span><select id="wheelPreset"><option value="egw102-dinput">Esperanza Nitro EGW102 · DirectInput</option><option value="egw102-xinput">Esperanza Nitro EGW102 · XInput</option></select><button id="applyWheelPreset" type="button">ПРИМЕНИТЬ</button></div>
+        <p class="wheel-preset-note">DirectInput: LED выключен, руль — ось X, педали — общая ось Y. XInput: LED включён, педали обычно идут как LT/RT. После применения проверь оси и кнопки в настройках ниже.</p>
         <div id="gamepadMappings" class="gamepad-mappings"></div>
         <button id="gamepadReset" class="gamepad-reset" type="button">СБРОСИТЬ МАППИНГ</button>
         <small>Геймпады и рули с поддержкой браузерного Gamepad API. Можно назначить кнопки, ось поворота руля и отдельные оси педалей газа, тормоза и сцепления. Силовая обратная связь (force feedback) через обычный Gamepad API не поддерживается.</small>
