@@ -589,7 +589,7 @@ function updateNeeds(dt){
  if(!isOnFoot&&engineOn)hunger=Math.min(100,hunger+dt*.018);
  else if(isOnFoot)hunger=Math.min(100,hunger+dt*.025);
  if(isOnFoot)fatigue=Math.min(100,fatigue+dt*.018);else if(engineOn)fatigue=Math.min(100,fatigue+dt*.009);
- if(activeBuilding?.kind==='home'&&keys.has('KeyP'))fatigue=Math.max(0,fatigue-dt*28);
+ 
  needsTick+=dt;if(needsTick<.25)return;needsTick=0;
  const hv=$('hungerValue'),fv=$('fatigueValue'),mv=$('moneyValue'),hb=$('hungerBar'),fb=$('fatigueBar');
  if(hv)hv.textContent=Math.round(hunger)+'%';if(fv)fv.textContent=Math.round(fatigue)+'%';if(mv)mv.textContent='₴ '+money;
@@ -714,7 +714,7 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyV'&&!e.repeat&&!isOnFoot)setCameraMode();
   if(e.code==='KeyB'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='shop')openShop();
   if(e.code==='KeyP'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='home'){
-    const atBed=Math.hypot(player.position.x,player.position.z+1.6)<2.25;
+    const atBed=Math.hypot(player.position.x-activeBuilding.x,player.position.z-(activeBuilding.z-1.6))<2.25;
     if(atBed){fatigue=0;hunger=Math.min(100,hunger+12);dayMinutes=7*60;notify('ТЫ ПРОСПАЛ ДО 07:00 · УСТАЛОСТЬ СБРОШЕНА');updateNeeds(0);}
     else notify('ПОДОЙДИ К КРОВАТИ, ЧТОБЫ ЛЕЧЬ СПАТЬ');
   }
@@ -1264,7 +1264,7 @@ function animate(){
       }
     }else if(!keys.has('KeyE')){starterHold=0;starterRod.visible=true;}
     if(activeBuilding?.kind==='shop')updatePrompt('ГАСТРОНОМ · B — открыть товары · E — выйти');
-    else if(activeBuilding?.kind==='home')updatePrompt(Math.hypot(player.position.x,player.position.z+1.6)<2.25?'КРОВАТЬ · P — СПАТЬ ДО 07:00':'КВАРТИРА · ПОДОЙДИ К КРОВАТИ · E — ВЫЙТИ');
+    else if(activeBuilding?.kind==='home')updatePrompt(Math.hypot(player.position.x-activeBuilding.x,player.position.z-(activeBuilding.z-1.6))<2.25?'КРОВАТЬ · P — СПАТЬ ДО 07:00':'КВАРТИРА · ПОДОЙДИ К КРОВАТИ · E — ВЫЙТИ');
     else if(activeBuilding)updatePrompt(activeBuilding.name+' · WASD — ходить · Shift — бежать · E — выйти');
     else if(nearDoor)updatePrompt('E — сесть в Волгу · F — перелить бензин из полной канистры в бак');
     else if(!activeBuilding&&Math.hypot(player.position.x-worldPoint(0,2.55).x,player.position.z-worldPoint(0,2.55).z)<2.0)updatePrompt(trunkOpen?(starterRodHeld?'E — положить ручку обратно в багажник':'E — взять ручку заводки из багажника'):'O — открыть багажник');
