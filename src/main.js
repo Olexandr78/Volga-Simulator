@@ -739,7 +739,7 @@ $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
 let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
 // Browser rumble/haptics: vibration motor only; actual steering torque FFB is a separate API.
-let rumbleEnabled=false,rumbleLastAt=0,rumblePhase=0,rumbleTestUntil=0,rumbleLastController=-1,rumbleCommandBusy=false;
+let rumbleEnabled=false,rumbleLastAt=0,rumblePhase=0,rumbleTestUntil=0,rumbleCommandBusy=false;
 const rumbleToggle=$('rumbleToggle');
 function selectedRumblePad(){
  const pads=navigator.getGamepads?.()||[];
@@ -753,38 +753,58 @@ function getRumbleActuator(pad){
  return pad.vibrationActuator||pad.hapticActuators?.[0]||null;
 }
 function updateRumbleStatus(message){const el=$('rumbleStatus');if(el)el.textContent=message;}
-async function sendRumble(pad,strong,weak,duration=160){
- if(rumbleCommandBusy)return false;
+async function sendRumble(pad,strong,weak,duration=240){
  const actuator=getRumbleActuator(pad);
  if(!actuator){updateRumbleStatus('НЕТ ДОСТУПА К ВИБРОМОТОРУ: браузер не предоставил haptic actuator.');return false;}
+ // Never overlap dual-rumble effects: overlapping calls are rejected as "preempted".
+ if(rumbleCommandBusy)return false;
  rumbleCommandBusy=true;
  try{
   if(typeof actuator.playEffect==='function'){
    const effects=Array.isArray(actuator.effects)?actuator.effects:[];
    if(effects.length&&!effects.includes('dual-rumble')){updateRumbleStatus('Контроллер не объявил поддержку dual-rumble.');return false;}
-   const result=await actuator.playEffect('dual-rumble',{duration,strongMagnitude:THREE.MathUtils.clamp(strong,0,1),weakMagnitude:THREE.MathUtils.clamp(weak,0,1)});
-   if(result==='complete'||result===undefined){updateRumbleStatus('КОМАНДА ВИБРАЦИИ ОТПРАВЛЕНА');return true;}
-   updateRumbleStatus('Устройство отклонило вибрацию: '+result);return false;
+   const result=await actuator.playEffect('dual-rumble',{
+    startDelay:0,duration,
+    strongMagnitude:THREE.MathUtils.clamp(strong,0,1),
+    weakMagnitude:THREE.MathUtils.clamp(weak,0,1)
+   });
+   if(result==='complete'||result===undefined){updateRumbleStatus('ВИБРАЦИЯ РАБОТАЕТ');return true;}
+   updateRumbleStatus('Контроллер отклонил вибрацию: '+result);
+   return false;
   }
-  if(typeof actuator.pulse==='function'){await actuator.pulse(Math.max(strong,weak),duration);updateRumbleStatus('КОМАНДА ВИБРАЦИИ ОТПРАВЛЕНА');return true;}
- }catch(error){updateRumbleStatus('ОШИБКА ВИБРАЦИИ: '+(error?.message||String(error)));return false;}
- finally{rumbleCommandBusy=false;}
- updateRumbleStatus('Haptic actuator найден, но браузер не поддерживает нужный метод.');
- return false;
+  if(typeof actuator.pulse==='function'){
+   await actuator.pulse(Math.max(strong,weak),duration);
+   updateRumbleStatus('ВИБРАЦИЯ РАБОТАЕТ');return true;
+  }
+  updateRumbleStatus('Вибромотор найден, но браузер не поддерживает playEffect/pulse.');
+  return false;
+ }catch(error){
+  updateRumbleStatus('ОШИБКА ВИБРАЦИИ: '+(error?.message||String(error)));
+  return false;
+ }finally{
+  rumbleCommandBusy=false;
+ }
 }
 rumbleToggle?.addEventListener('click',()=>{
  rumbleEnabled=!rumbleEnabled;setRumbleButton();
  const pad=selectedRumblePad();
  if(rumbleEnabled){
   if(!pad){rumbleEnabled=false;setRumbleButton();updateRumbleStatus('Сначала выбери подключённый руль.');return;}
-  if(!getRumbleActuator(pad)){rumbleEnabled=false;setRumbleButton();updateRumbleStatus('Браузер не видит вибромотор. Попробуй переключить EGW102 в XInput и переподключить USB.');return;}
+  if(!getRumbleActuator(pad)){rumbleEnabled=false;setRumbleButton();updateRumbleStatus('Браузер не видит вибромотор. Попробуй XInput и переподключи USB.');return;}
+  // Start a short effect directly from the click gesture so browsers unlock haptics.
   updateRumbleStatus('Вибрация включена. Нажми «ТЕСТ» или заведи двигатель.');
- }else{const a=getRumbleActuator(pad);try{a?.reset?.();}catch{}updateRumbleStatus('Вибрация выключена.');}
+ }else{
+  rumbleTestUntil=0;
+  try{getRumbleActuator(pad)?.reset?.();}catch{}
+  updateRumbleStatus('Вибрация выключена.');
+ }
 });
 $('rumbleTest')?.addEventListener('click',()=>{
  const pad=selectedRumblePad();
  if(!pad){if(gamepadStatus)gamepadStatus.textContent='Сначала выбери подключённый контроллер.';return;}
- rumbleTestUntil=gameTime+1.2;sendRumble(pad,1,1,450);
+ if(!getRumbleActuator(pad)){updateRumbleStatus('Браузер не обнаружил вибромотор этого контроллера.');return;}
+ rumbleTestUntil=gameTime+1.05;
+ sendRumble(pad,1,1,1000);
 });
 function updateEngineRumble(dt){
  if(!rumbleEnabled)return;
@@ -792,24 +812,25 @@ function updateEngineRumble(dt){
  if(!pad||pad.index!==selectedGamepadIndex)return;
  if(!getRumbleActuator(pad)){updateRumbleStatus('БРАУЗЕР НЕ ВИДИТ ВИБРОМОТОР · попробуй XInput и переподключение USB.');return;}
  if(gameTime<rumbleTestUntil||rumbleCommandBusy)return;
- if(gameTime-rumbleLastAt<.20)return;
- rumbleLastAt=gameTime;rumblePhase+=dt*2*Math.PI*(engineOn?Math.max(12,rpm/60):24);
+ // Leave a small gap between effects; this avoids browser "preempted" errors.
+ if(gameTime-rumbleLastAt<.28)return;
+ rumbleLastAt=gameTime;
+ rumblePhase+=dt*2*Math.PI*(engineOn?Math.max(12,rpm/60):24);
  let strong=0,weak=0;
- if(gameTime<rumbleTestUntil){strong=.85;weak=1;}
- else if(!engineOn&&keys.has('KeyE')&&ignitionOn){
-  // Starter motor: rough intermittent crank pulses.
+ if(!engineOn&&keys.has('KeyE')&&ignitionOn){
+  // Starter: pulsing, uneven crank vibration while the starter key is held.
   const pulse=.5+.5*Math.sin(gameTime*2*Math.PI*17);
-  strong=.22+pulse*.43;weak=.32+pulse*.58;
+  strong=.24+pulse*.46;weak=.36+pulse*.58;
  }else if(engineOn){
-  // Idle has a slow uneven body shake; revs and throttle increase the vibration.
+  // Running engine: uneven idle shake; intensity rises with RPM and throttle.
   const load=keyboardThrottle?1:gamepadGasValue;
   const idlePulse=.5+.5*Math.sin(rumblePhase*.42)+.18*Math.sin(rumblePhase*1.31);
-  const intensity=THREE.MathUtils.clamp(.24+rpm/6500*.42+load*.24,0,1);
-  strong=intensity*THREE.MathUtils.clamp(.42+idlePulse*.48,0,1);
-  weak=THREE.MathUtils.clamp(.34+intensity*.56,0,1);
+  const intensity=THREE.MathUtils.clamp(.22+rpm/6500*.48+load*.25,0,1);
+  strong=intensity*THREE.MathUtils.clamp(.38+idlePulse*.52,0,1);
+  weak=THREE.MathUtils.clamp(.30+intensity*.62,0,1);
  }
- if(strong>.015||weak>.015)sendRumble(pad,strong,weak,190);
- else{const a=getRumbleActuator(pad);try{a?.reset?.();}catch{}}
+ if(strong>.015||weak>.015)sendRumble(pad,strong,weak,250);
+ else{try{getRumbleActuator(pad)?.reset?.();}catch{}}
 }
 let gamepadGasValue=0,gamepadBrakeValue=0,gamepadClutchValue=0,gamepadChokeHeld=false;
 function buttonValue(gp,index){const b=gp.buttons[index];return b?THREE.MathUtils.clamp(Number(b.value)||0,0,1):0;}
