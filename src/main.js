@@ -425,7 +425,9 @@ for(let x=-105;x<=105;x+=30) for(let z=-165;z<=135;z+=30){
 }
 for(let i=0;i<32;i++){
   const x=-100+(i*37%200), z=-155+(i*53%280);
-  if(Math.abs((x+15)%30)<7 || Math.abs((z+15)%30)<7) continue;
+  const roadX=Math.min(...Array.from({length:8},(_,n)=>Math.abs(x-(-105+n*30))));
+  const roadZ=Math.min(...Array.from({length:11},(_,n)=>Math.abs(z-(-165+n*30))));
+  if(roadX<10.5||roadZ<10.5||Math.abs(x)<9||[-160,0,160].some(v=>Math.abs(z-v)<10))continue;
   mesh(new THREE.CylinderGeometry(.12,.2,2.3,7),mat(0x554738),city,[x,1.15,z]);
   mesh(new THREE.SphereGeometry(1,10,8),mat(0x536b4e),city,[x,2.9,z]).scale.set(1.15,1.35,1.15);
 }
@@ -584,7 +586,82 @@ function createScooter(z,index){
  const taunt=new THREE.Sprite(new THREE.SpriteMaterial({map:bubbleTexture,transparent:true,depthTest:false}));taunt.position.set(0,2.15,0);taunt.scale.set(1.8,.46,1);g.add(taunt);
  scooters.push({group:g,speed:5.2+index*.35,passed:false,taunt});
 }
+
 for(let i=0;i<4;i++)createScooter(-55-i*48,i);
+
+// Rival: an aggressive G2 Max rider doing a wheelie beside the boulevard.
+const rivalScooter=new THREE.Group();scene.add(rivalScooter);rivalScooter.position.set(6,0,-12);
+const g2Frame=mat(0x202326,.55,.35),g2Tire=mat(0x111315,.02,.92),g2Metal=mat(0x858d91,.8,.28);
+mesh(new THREE.TorusGeometry(.24,.065,10,22),g2Tire,rivalScooter,[0,.24,.55],[Math.PI/2,0,0]);
+mesh(new THREE.TorusGeometry(.24,.065,10,22),g2Tire,rivalScooter,[0,.78,-.56],[Math.PI/2,0,0]);
+box(rivalScooter,[.16,.09,1.0],[0,.43,0],g2Frame,.035,3);
+box(rivalScooter,[.09,.62,.11],[0,.77,-.35],g2Frame,.025,2);
+box(rivalScooter,[.48,.075,.1],[0,1.08,-.4],g2Metal,.025,2);
+const rivalRider=mesh(new THREE.CapsuleGeometry(.16,.58,4,8),mat(0x252b34),rivalScooter,[0,1.28,.08],[.42,0,0]);
+sphere(rivalScooter,[0,1.78,-.08],[.19,.2,.19],mat(0x20252b));
+box(rivalScooter,[.4,.12,.25],[0,1.82,-.19],mat(0x333b43),.06,3);
+const rivalTagCanvas=document.createElement('canvas');rivalTagCanvas.width=512;rivalTagCanvas.height=110;
+const rivalTagCtx=rivalTagCanvas.getContext('2d');rivalTagCtx.fillStyle='#101820';rivalTagCtx.fillRect(0,0,512,110);
+rivalTagCtx.strokeStyle='#e3b95c';rivalTagCtx.lineWidth=7;rivalTagCtx.strokeRect(4,4,504,102);
+rivalTagCtx.fillStyle='#f5e8c8';rivalTagCtx.font='bold 34px Arial';rivalTagCtx.textAlign='center';rivalTagCtx.fillText('G2 MAX · ВИЛЛИ',256,70);
+const rivalTag=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(rivalTagCanvas),depthTest:false}));
+rivalTag.position.set(0,2.65,0);rivalTag.scale.set(3.1,.68,1);rivalScooter.add(rivalTag);
+const rivalTauntCanvas=document.createElement('canvas');rivalTauntCanvas.width=512;rivalTauntCanvas.height=96;
+const rivalTauntCtx=rivalTauntCanvas.getContext('2d');rivalTauntCtx.fillStyle='#f1e5c7';rivalTauntCtx.fillRect(0,0,512,96);
+rivalTauntCtx.fillStyle='#39251e';rivalTauntCtx.font='bold 27px Arial';rivalTauntCtx.textAlign='center';rivalTauntCtx.fillText('ВОЛГА — ХЛАМ! Я ТЕБЯ ПОБЬЮ!',256,59);
+const rivalTaunt=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(rivalTauntCanvas),depthTest:false}));
+rivalTaunt.position.set(0,2.12,.05);rivalTaunt.scale.set(3.3,.62,1);rivalScooter.add(rivalTaunt);
+let raceActive=false,raceStartZ=0,rivalRaceZ=0,rivalRaceSpeed=0,raceGoodShifts=0,raceDistractedUntil=0,raceElapsed=0,raceReturn=null;
+const raceLength=1609.344,raceTrackX=5000,raceTrackZ=0;
+const raceGround=mesh(new THREE.PlaneGeometry(100,1800),mat(0x405238,0,.98),scene,[raceTrackX,-.14,0],[-Math.PI/2,0,0],false);
+const raceRoad=mesh(new THREE.PlaneGeometry(22,1720),asphalt,scene,[raceTrackX,-.075,0],[-Math.PI/2,0,0],false);
+for(const x of [-8,8])mesh(new THREE.PlaneGeometry(.18,1720),laneWhite,scene,[raceTrackX+x,-.035,0],[-Math.PI/2,0,0],false);
+for(let z=-820;z<=820;z+=20)for(const x of [-3.8,3.8])mesh(new THREE.PlaneGeometry(.12,8),laneWhite,scene,[raceTrackX+x,-.035,z],[-Math.PI/2,0,0],false);
+for(const z of [-805,805])for(let x=-11;x<=11;x+=2)box(scene,[1.8,.75,.35],[raceTrackX+x,.38,z],mat(0xe4e0d2),.025,2);
+const raceScooter=new THREE.Group();scene.add(raceScooter);raceScooter.visible=false;
+const raceWheelMat=mat(0x101214,.02,.9),raceScootMat=mat(0x222a31,.45,.42);
+for(const z of [-.55,.55])mesh(new THREE.TorusGeometry(.24,.065,10,22),raceWheelMat,raceScooter,[0,.24,z],[Math.PI/2,0,0]);
+box(raceScooter,[.18,.1,1.05],[0,.45,0],raceScootMat,.03,3);
+box(raceScooter,[.1,.65,.12],[0,.82,-.38],raceScootMat,.02,2);
+box(raceScooter,[.48,.08,.12],[0,1.16,-.4],g2Metal,.025,2);
+mesh(new THREE.CapsuleGeometry(.15,.55,4,8),mat(0x283343),raceScooter,[0,1.38,.05],[.1,0,0]);
+sphere(raceScooter,[0,1.86,.02],[.17,.18,.17],mat(0x20252b));
+function startOneMileDrag(){
+ if(raceActive)return;
+ if(Math.abs(speed)>1.0){notify('ОСТАНОВИ ВОЛГУ ПЕРЕД ЗАЕЗДОМ');return;}
+ raceReturn={x:car.position.x,z:car.position.z,heading};
+ if(activeBuilding){activeBuilding.interior.visible=false;activeBuilding.exterior.visible=true;activeBuilding=null;}
+ isOnFoot=false;player.visible=false;
+ raceActive=true;raceStartZ=760;rivalRaceZ=760;rivalRaceSpeed=0;raceGoodShifts=0;raceDistractedUntil=0;raceElapsed=0;
+ car.position.set(raceTrackX,0,raceStartZ);car.rotation.set(0,0,0);heading=0;speed=0;steering=0;
+ engineOn=true;ignitionOn=true;gear=1;clutchEngagement=1;rpm=1100;fuelLiters=Math.max(fuelLiters,5);
+ raceScooter.position.set(raceTrackX+3.5,0,rivalRaceZ);raceScooter.visible=true;
+ $('raceHud')?.classList.add('active');if($('raceDistance'))$('raceDistance').textContent='0 / 1609 м';
+ notify('ДРАГ НА 1 МИЛЮ! ПЕРВЫЙ ДО ФИНИША — ПОЕХАЛИ!');
+}
+function finishDrag(playerWon){
+ raceActive=false;raceScooter.visible=false;$('raceHud')?.classList.remove('active');
+ if(playerWon){money+=1000000;notify('ПОБЕДА! +₴1 000 000 · G2 MAX ОСТАЛСЯ ПОЗАДИ!');}
+ else notify('G2 MAX ПЕРВЫМ НА ФИНИШЕ. ПОПРОБУЙ ЕЩЁ РАЗ!');
+ if(raceReturn){car.position.set(raceReturn.x,0,raceReturn.z);heading=raceReturn.heading;car.rotation.y=heading;}
+ speed=0;gear=0;engineOn=false;ignitionOn=false;rpm=0;raceReturn=null;
+ updateNeeds(0);
+}
+function updateDrag(dt){
+ if(!raceActive)return;
+ raceElapsed+=dt;
+ const distracted=raceElapsed<raceDistractedUntil;
+ const target=distracted?15.5:38.89; // 140 km/h maximum when focused.
+ rivalRaceSpeed=Math.min(target,rivalRaceSpeed+(distracted?2.5:6.8)*dt);
+ rivalRaceZ-=rivalRaceSpeed*dt;
+ raceScooter.position.z=rivalRaceZ;
+ const playerDistance=Math.max(0,raceStartZ-car.position.z),rivalDistance=Math.max(0,raceStartZ-rivalRaceZ);
+ const d=$('raceDistance');if(d)d.textContent=Math.min(raceLength,Math.round(playerDistance))+' / 1609 м';
+ const status=$('raceStatus');if(status)status.textContent=distracted?'СОПЕРНИК ОТВЛЁКСЯ! ДАВИ!':'САМОКАТ: '+Math.round(rivalRaceSpeed*3.6)+' км/ч · 140 км/ч МАКС.';
+ if(playerDistance>=raceLength){finishDrag(true);return;}
+ if(rivalDistance>=raceLength){finishDrag(false);}
+}
+
 function updateNeeds(dt){
  if(!isOnFoot&&engineOn)hunger=Math.min(100,hunger+dt*.018);
  else if(isOnFoot)hunger=Math.min(100,hunger+dt*.025);
@@ -705,12 +782,21 @@ function shiftGear(next){
     if(estimatedRpm>5200){notify('РАНО ПОНИЖАТЬ — ДВИГАТЕЛЬ ПЕРЕКРУТИТСЯ');return;}
   }
   gear=THREE.MathUtils.clamp(next,-1,4);
+  if(raceActive&&rpm>=1900&&rpm<=4700){
+    raceGoodShifts++;
+    if(raceGoodShifts>=3&&raceDistractedUntil<raceElapsed){raceDistractedUntil=raceElapsed+3.4;notify('ОН ОТВЛЁКСЯ НА ТВОИ ПЕРЕКЛЮЧЕНИЯ! ОБГОНЯЙ!');}
+  }
   clutchStallTimer=0;
   notify('КОРОБКА: '+(gear===-1?'ЗАДНЯЯ':gear===0?'НЕЙТРАЛЬ':gear+'-Я ПЕРЕДАЧА'));
 }
 addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
   physicalKeys.add(e.code);keys.add(e.code);
+  if(e.code==='KeyT'&&!e.repeat&&!raceActive){
+    const nearRival=Math.hypot((isOnFoot?player.position.x:car.position.x)-rivalScooter.position.x,(isOnFoot?player.position.z:car.position.z)-rivalScooter.position.z)<14;
+    if(nearRival)startOneMileDrag();
+    else notify('ПОДЪЕДЬ К САМОКАТЧИКУ G2 MAX И НАЖМИ T');
+  }
   if(e.code==='KeyV'&&!e.repeat&&!isOnFoot)setCameraMode();
   if(e.code==='KeyB'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='shop')openShop();
   if(e.code==='KeyP'&&!e.repeat&&isOnFoot&&activeBuilding?.kind==='home'){
@@ -1095,6 +1181,8 @@ function drawWorldMap(){
  mapCtx.strokeStyle='#778078';mapCtx.lineWidth=7;
  for(let x=-120;x<=120;x+=30){const px=w/2+(x-car.position.x)*scale;mapCtx.beginPath();mapCtx.moveTo(px,0);mapCtx.lineTo(px,h);mapCtx.stroke();}
  for(let z=-165;z<=135;z+=30){const py=h/2+(z-car.position.z)*scale;mapCtx.beginPath();mapCtx.moveTo(0,py);mapCtx.lineTo(w,py);mapCtx.stroke();}
+ const mark=(x,z,label,color)=>{const px=w/2+(x-car.position.x)*scale,py=h/2+(z-car.position.z)*scale;if(px<-20||px>w+20||py<-20||py>h+20)return;mapCtx.fillStyle=color;mapCtx.beginPath();mapCtx.arc(px,py,7,0,Math.PI*2);mapCtx.fill();mapCtx.strokeStyle='#101713';mapCtx.lineWidth=2;mapCtx.stroke();mapCtx.fillStyle='#fff3d4';mapCtx.font='bold 10px monospace';mapCtx.textAlign='center';mapCtx.fillText(label,px,py-11);};
+ mark(58,18,'ДОМ','#58b7e0');mark(-58,18,'МАГАЗИН','#e4b85b');
  const sx=w/2+(stationX-car.position.x)*scale,sy=h/2+(stationZ-car.position.z)*scale;
  mapCtx.fillStyle='#f1c66e';mapCtx.beginPath();mapCtx.arc(sx,sy,9,0,Math.PI*2);mapCtx.fill();
  mapCtx.fillStyle='#49251a';mapCtx.font='bold 12px monospace';mapCtx.textAlign='center';mapCtx.fillText('АЗС',sx,sy-14);
@@ -1161,8 +1249,8 @@ function animate(){
     clutchEngagement=smooth(clutchEngagement,clutchTarget,clutchPedal?13:2.4,dt);
     const gearRatio=gear===-1?3.2:([0,3.54,2.26,1.45,1.0][gear]||0);
     const direction=gear===-1?-1:1;
-    const gearTop=gear===-1?5:([0,11,19,30,43][gear]||0);
-    const torqueByGear=gear===-1?2.0:([0,4.2,2.8,1.9,1.3][gear]||0);
+    const gearTop=gear===-1?5:(raceActive?([0,14,24,34,43][gear]||0):([0,11,19,30,43][gear]||0));
+    const torqueByGear=gear===-1?2.0:(raceActive?([0,5.5,3.7,2.7,2.0][gear]||0):([0,4.2,2.8,1.9,1.3][gear]||0));
     const drive=throttle&&engineOn&&gear!==0&&clutchEngagement>.06&&absSpeed<gearTop
       ?direction*torqueByGear*clutchEngagement*throttleAmount:0;
     speed+=drive*dt;
@@ -1171,7 +1259,7 @@ function animate(){
     const rollingResistance=gear!==0&&clutchEngagement>.8?.72:.48;
     if(!throttle&&!brake)speed-=Math.sign(speed)*Math.min(absSpeed,rollingResistance)*dt;
     if(gear===-1)speed=THREE.MathUtils.clamp(speed,-5,0);
-    else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,43);
+    else if(gear>0)speed=THREE.MathUtils.clamp(speed,0,raceActive?43:43);
     else speed=THREE.MathUtils.clamp(speed,-43,43);
     const targetRpm=engineOn
       ?Math.max((gear===0||clutchEngagement<.18
@@ -1189,7 +1277,7 @@ function animate(){
         notify('ДВИГАТЕЛЬ ЗАГЛОХ — ВЫЖМИ СЦЕПЛЕНИЕ И ЗАВЕДИ СНОВА');
       }
     }else clutchStallTimer=0;
-    if(engineOn){
+    if(engineOn&&!raceActive){
       stallCountdown-=dt;
       if(stallCountdown<=0){
         engineOn=false;speed*=.98;rpm=0;starterHold=0;
@@ -1281,6 +1369,7 @@ function animate(){
     const kmh=Math.round(Math.abs(speed)*3.6);speedEl.textContent=String(kmh);setNeedle(speedNeedle,kmh,180);
     rpmEl.textContent=String(Math.round(rpm));setNeedle(rpmNeedle,rpm/1000,6);gearEl.textContent=gear===-1?'R':gear===0?'N':String(gear);
   }
+  updateDrag(dt);
   // Scooter riders cruise along the boulevard. Overtaking one earns a small arcade bonus.
   for(const scooter of scooters){
     scooter.group.position.z-=scooter.speed*dt;
