@@ -738,6 +738,65 @@ gamepadPedalSelect?.addEventListener('change',()=>{selectedPedalGamepadIndex=gam
 $('gamepadRefresh')?.addEventListener('click',refreshGamepadChoices);
 $('gamepadReset')?.addEventListener('click',()=>{gamepadMap={...gamepadDefaults};steerAxis=0;gasAxis=brakeAxis=clutchAxis=-1;gamepadDeadzone=.12;captureGamepadAction=null;saveGamepadMap();renderGamepadMappings();});
 let previousGamepadButtons=[],gamepadVirtualKeys=new Set(),gamepadSteeringKey=null,lastGamepadRefresh=0;
+// Browser rumble/haptics: vibration motor only; actual steering torque FFB is a separate API.
+let rumbleEnabled=false,rumbleLastAt=0,rumblePhase=0,rumbleTestUntil=0,rumbleLastController=-1;
+const rumbleToggle=$('rumbleToggle');
+function selectedRumblePad(){
+ const pads=navigator.getGamepads?.()||[];
+ return pads[selectedGamepadIndex]||null;
+}
+function setRumbleButton(){
+ if(rumbleToggle){rumbleToggle.textContent=rumbleEnabled?'ВКЛ':'ВЫКЛ';rumbleToggle.setAttribute('aria-pressed',String(rumbleEnabled));}
+}
+async function sendRumble(pad,strong,weak,duration=140){
+ try{
+  const actuator=pad?.vibrationActuator||pad?.hapticActuators?.[0];
+  if(!actuator)return false;
+  if(typeof actuator.playEffect==='function'){
+   const type=actuator.type==='trigger-rumble'?'trigger-rumble':'dual-rumble';
+   await actuator.playEffect(type,{duration,strongMagnitude:THREE.MathUtils.clamp(strong,0,1),weakMagnitude:THREE.MathUtils.clamp(weak,0,1),leftTrigger:0,rightTrigger:0});
+   return true;
+  }
+  if(typeof actuator.pulse==='function'){await actuator.pulse(Math.max(strong,weak),duration);return true;}
+ }catch{}
+ return false;
+}
+rumbleToggle?.addEventListener('click',()=>{
+ rumbleEnabled=!rumbleEnabled;setRumbleButton();
+ const pad=selectedRumblePad();
+ if(rumbleEnabled){
+  if(!pad){rumbleEnabled=false;setRumbleButton();if(gamepadStatus)gamepadStatus.textContent='Сначала выбери подключённый руль или геймпад.';return;}
+  sendRumble(pad,.65,.9,220).then(ok=>{if(!ok&&gamepadStatus)gamepadStatus.textContent='Устройство или браузер не поддерживает вибрацию через Gamepad API.';});
+ }else{const a=pad?.vibrationActuator||pad?.hapticActuators?.[0];try{a?.reset?.();}catch{}}
+});
+$('rumbleTest')?.addEventListener('click',()=>{
+ const pad=selectedRumblePad();
+ if(!pad){if(gamepadStatus)gamepadStatus.textContent='Сначала выбери подключённый контроллер.';return;}
+ rumbleTestUntil=gameTime+1.0;sendRumble(pad,.85,1,180);
+});
+function updateEngineRumble(dt){
+ if(!rumbleEnabled)return;
+ const pad=selectedRumblePad();
+ if(!pad||pad.index!==selectedGamepadIndex)return;
+ if(gameTime-rumbleLastAt<.12)return;
+ rumbleLastAt=gameTime;rumblePhase+=dt*2*Math.PI*(engineOn?Math.max(12,rpm/60):24);
+ let strong=0,weak=0;
+ if(gameTime<rumbleTestUntil){strong=.85;weak=1;}
+ else if(!engineOn&&keys.has('KeyE')&&ignitionOn){
+  // Starter motor: rough intermittent crank pulses.
+  const pulse=.5+.5*Math.sin(gameTime*2*Math.PI*17);
+  strong=.22+pulse*.43;weak=.32+pulse*.58;
+ }else if(engineOn){
+  // Idle has a slow uneven body shake; revs and throttle increase the vibration.
+  const load=keyboardThrottle?1:gamepadGasValue;
+  const idlePulse=.5+.5*Math.sin(rumblePhase*.42)+.18*Math.sin(rumblePhase*1.31);
+  const intensity=THREE.MathUtils.clamp(.24+rpm/6500*.42+load*.24,0,1);
+  strong=intensity*THREE.MathUtils.clamp(.42+idlePulse*.48,0,1);
+  weak=THREE.MathUtils.clamp(.34+intensity*.56,0,1);
+ }
+ if(strong>.015||weak>.015)sendRumble(pad,strong,weak,150);
+ else{const a=pad.vibrationActuator||pad.hapticActuators?.[0];try{a?.reset?.();}catch{}}
+}
 let gamepadGasValue=0,gamepadBrakeValue=0,gamepadClutchValue=0,gamepadChokeHeld=false;
 function buttonValue(gp,index){const b=gp.buttons[index];return b?THREE.MathUtils.clamp(Number(b.value)||0,0,1):0;}
 function buttonPressed(gp,index){const b=gp.buttons[index];return !!b&&(b.pressed||b.value>.55);}
@@ -857,6 +916,7 @@ function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.035);
   pollGamepad(dt);
+  updateEngineRumble(dt);
   gameTime+=dt;
   hoodHinge.rotation.x=smooth(hoodHinge.rotation.x,hoodOpen?.92:0,5,dt);
   trunkHinge.rotation.x=smooth(trunkHinge.rotation.x,trunkOpen?-.82:0,5,dt);
