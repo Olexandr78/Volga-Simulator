@@ -277,3 +277,6 @@ body[data-control-mode="tablet"] .game-prompt{top:150px;bottom:auto}
  .gear-panel{min-width:50px;padding:9px 5px}
 }
 @media(max-height:500px) and (min-width:701px){.analog-gauge{width:150px;padding:4px 7px}.hud{bottom:45px}}
+
+/* SVG needles rotate around the actual dial hub at every responsive size. */
+.dial-needle{transform-box:view-box;transform-origin:50% 50%}
