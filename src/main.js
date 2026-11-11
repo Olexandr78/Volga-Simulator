@@ -667,11 +667,11 @@ function saveGamepadMap(){try{localStorage.setItem('volga-gamepad-map-v2',JSON.s
 // Y-axis split pedals in DirectInput, LT/RT triggers in XInput.
 const egw102Presets={
  'egw102-dinput':{
-  buttons:{...gamepadDefaults,gas:-1,brake:-1,clutch:4,handbrake:5,gear1:0,gear2:1,gear3:2,gear4:3,neutral:8,reverse:9,exit:10,camera:11,engineOff:9,ignition:8,choke:6,hood:10,trunk:11},
+  buttons:{...gamepadDefaults,gas:-1,brake:-1,clutch:4,handbrake:5,gear1:0,gear2:1,gear3:2,gear4:3,neutral:-1,reverse:-1,exit:10,camera:11,engineOff:9,ignition:8,choke:6,hood:-1,trunk:-1},
   steerAxis:0,gasAxis:1,brakeAxis:-3,clutchAxis:-1,deadzone:.08
  },
  'egw102-xinput':{
-  buttons:{...gamepadDefaults,gas:7,brake:6,clutch:4,handbrake:5,gear1:3,gear2:1,gear3:0,gear4:2,neutral:12,reverse:13,exit:8,camera:9,engineOff:9,ignition:8,choke:10,hood:11,trunk:14},
+  buttons:{...gamepadDefaults,gas:7,brake:6,clutch:4,handbrake:5,gear1:3,gear2:1,gear3:0,gear4:2,neutral:12,reverse:13,exit:8,camera:9,engineOff:10,ignition:11,choke:-1,hood:14,trunk:15},
   steerAxis:0,gasAxis:-1,brakeAxis:-1,clutchAxis:-1,deadzone:.08
  }
 };
