@@ -634,7 +634,7 @@ function startOneMileDrag(){
  isOnFoot=false;player.visible=false;
  raceActive=true;raceStartZ=760;rivalRaceZ=760;rivalRaceSpeed=0;raceGoodShifts=0;raceDistractedUntil=0;raceElapsed=0;
  car.position.set(raceTrackX,0,raceStartZ);car.rotation.set(0,0,0);heading=0;speed=0;steering=0;
- engineOn=true;ignitionOn=true;gear=1;clutchEngagement=1;rpm=1250;startRevTimer=0;clutchStallTimer=0;fuelLiters=Math.max(fuelLiters,5);
+ engineOn=true;ignitionOn=true;gear=1;clutchEngagement=1;rpm=1450;startRevTimer=2.4;clutchStallTimer=0;fuelLiters=Math.max(fuelLiters,5);
  raceScooter.position.set(raceTrackX+3.5,0,rivalRaceZ);raceScooter.visible=true;
  $('raceHud')?.classList.add('active');if($('raceDistance'))$('raceDistance').textContent='0 / 1609 м';
  notify('ДРАГ НА 1 МИЛЮ! ПЕРВЫЙ ДО ФИНИША — ПОЕХАЛИ!');
