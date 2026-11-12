@@ -634,7 +634,7 @@ function startOneMileDrag(){
  isOnFoot=false;player.visible=false;
  raceActive=true;raceStartZ=760;rivalRaceZ=760;rivalRaceSpeed=0;raceGoodShifts=0;raceDistractedUntil=0;raceElapsed=0;
  car.position.set(raceTrackX,0,raceStartZ);car.rotation.set(0,0,0);heading=0;speed=0;steering=0;
- engineOn=true;ignitionOn=true;gear=1;clutchEngagement=1;rpm=1100;fuelLiters=Math.max(fuelLiters,5);
+ engineOn=true;ignitionOn=true;gear=1;clutchEngagement=1;rpm=1250;startRevTimer=0;clutchStallTimer=0;fuelLiters=Math.max(fuelLiters,5);
  raceScooter.position.set(raceTrackX+3.5,0,rivalRaceZ);raceScooter.visible=true;
  $('raceHud')?.classList.add('active');if($('raceDistance'))$('raceDistance').textContent='0 / 1609 м';
  notify('ДРАГ НА 1 МИЛЮ! ПЕРВЫЙ ДО ФИНИША — ПОЕХАЛИ!');
@@ -708,7 +708,14 @@ function updateDayNight(dt){
 let toastTimer;
 function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),2200)}
 function setCameraMode(){cameraMode=(cameraMode+1)%4;notify(['КАМЕРА: СЗАДИ','КАМЕРА: КАПОТ','КАМЕРА: САЛОН','КАМЕРА: СВЕРХУ'][cameraMode])}
-function resetCar(){if(activeBuilding){activeBuilding.interior.visible=false;activeBuilding.exterior.visible=true;activeBuilding=null;}car.position.set(0,0,0);car.rotation.set(0,0,0);speed=0;heading=0;steering=0;rpm=0;gear=0;engineOn=false;ignitionOn=false;chokeOn=false;startRevTimer=0;hoodOpen=false;trunkOpen=false;hoodHinge.rotation.x=0;trunkHinge.rotation.x=0;isOnFoot=false;player.visible=false;starterHold=0;camera.position.set(7,4,9);notify('ВОЛГА ВОЗВРАЩЕНА · НЕЙТРАЛЬ, ЗАЖИГАНИЕ И СТАРТЕР')}
+function randomizeCarSpawn(){
+  // Spawn on the main boulevard, at a random point and facing either direction.
+  const z=THREE.MathUtils.randFloat(-270,270);
+  heading=Math.random()<.5?0:Math.PI;
+  car.position.set(0,0,z);car.rotation.set(0,heading,0);
+  speed=0;steering=0;steerAngle=0;clutchStallTimer=0;
+}
+function resetCar(){if(activeBuilding){activeBuilding.interior.visible=false;activeBuilding.exterior.visible=true;activeBuilding=null;}randomizeCarSpawn();rpm=0;gear=0;engineOn=false;ignitionOn=false;chokeOn=false;startRevTimer=0;clutchEngagement=1;hoodOpen=false;trunkOpen=false;hoodHinge.rotation.x=0;trunkHinge.rotation.x=0;isOnFoot=false;player.visible=false;starterHold=0;camera.position.set(car.position.x+Math.sin(heading)*8.8,4,car.position.z+Math.cos(heading)*8.8);camera.lookAt(car.position.x,1,car.position.z);notify('ВОЛГА ВОЗВРАЩЕНА · НОВОЕ СЛУЧАЙНОЕ МЕСТО');}
 const player=new THREE.Group(); scene.add(player);
 const playerBody=mesh(new THREE.CapsuleGeometry(.28,.82,4,8),mat(0x303c4a),player,[0,.88,0]);
 const playerHead=sphere(player,[0,1.55,0],[.23,.25,.23],mat(0xc69b78));
@@ -717,6 +724,9 @@ const playerLegR=mesh(new THREE.CylinderGeometry(.09,.1,.65,8),mat(0x252a30),pla
 const heldStarterRod=mesh(new THREE.CylinderGeometry(.025,.025,.85,8),chrome,player,[.38,1.05,-.28],[0,0,Math.PI/2]);
 heldStarterRod.visible=false;
 player.visible=false;
+randomizeCarSpawn();
+camera.position.set(car.position.x+Math.sin(heading)*8.8,4,car.position.z+Math.cos(heading)*8.8);
+camera.lookAt(car.position.x,1,car.position.z);
 const prompt=$('gamePrompt');
 function updatePrompt(text){if(prompt)prompt.textContent=text;}
 function worldPoint(localX,localZ){
@@ -1281,12 +1291,12 @@ function animate(){
       :0;
     rpm=smooth(rpm,targetRpm,throttle?3.2:5.5,dt);
     if(startRevTimer>0)startRevTimer=Math.max(0,startRevTimer-dt);
-    // Releasing the clutch in gear without throttle at a standstill stalls the engine.
-    if(engineOn&&gear!==0&&clutchEngagement>.84&&absSpeed<.85&&!throttle){
+    // If a gear is engaged and the clutch is fully released below 1000 RPM, the engine stalls.
+    if(engineOn&&gear!==0&&clutchEngagement>.84&&rpm<1000){
       clutchStallTimer+=dt;
-      if(clutchStallTimer>.72){
-        engineOn=false;rpm=0;starterHold=0;clutchStallTimer=0;
-        notify('ДВИГАТЕЛЬ ЗАГЛОХ — ВЫЖМИ СЦЕПЛЕНИЕ И ЗАВЕДИ СНОВА');
+      if(clutchStallTimer>.28){
+        engineOn=false;rpm=0;starterHold=0;clutchStallTimer=0;speed*=.985;
+        notify('ДВИГАТЕЛЬ ЗАГЛОХ — МЕНЬШЕ 1000 ОБ/МИН! ВЫЖМИ СЦЕПЛЕНИЕ И ЗАВЕДИ СНОВА');
       }
     }else clutchStallTimer=0;
     if(engineOn&&!raceActive){
