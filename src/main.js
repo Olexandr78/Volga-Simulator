@@ -612,6 +612,7 @@ rivalTauntCtx.fillStyle='#39251e';rivalTauntCtx.font='bold 27px Arial';rivalTaun
 const rivalTaunt=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(rivalTauntCanvas),depthTest:false}));
 rivalTaunt.position.set(0,2.12,.05);rivalTaunt.scale.set(3.3,.62,1);rivalScooter.add(rivalTaunt);
 let raceActive=false,raceStartZ=0,rivalRaceZ=0,rivalRaceSpeed=0,raceGoodShifts=0,raceDistractedUntil=0,raceElapsed=0,raceReturn=null;
+let victoryCutscene=null;
 const raceLength=1609.344,raceTrackX=5000,raceTrackZ=0;
 const raceGround=mesh(new THREE.PlaneGeometry(100,1800),mat(0x405238,0,.98),scene,[raceTrackX,-.14,0],[-Math.PI/2,0,0],false);
 const raceRoad=mesh(new THREE.PlaneGeometry(22,1720),asphalt,scene,[raceTrackX,-.075,0],[-Math.PI/2,0,0],false);
@@ -640,12 +641,50 @@ function startOneMileDrag(){
  notify('ДРАГ НА 1 МИЛЮ! ПЕРВЫЙ ДО ФИНИША — ПОЕХАЛИ!');
 }
 function finishDrag(playerWon){
- raceActive=false;raceScooter.visible=false;$('raceHud')?.classList.remove('active');
- if(playerWon){money+=1000000;notify('ПОБЕДА! +₴1 000 000 · G2 MAX ОСТАЛСЯ ПОЗАДИ!');}
- else notify('G2 MAX ПЕРВЫМ НА ФИНИШЕ. ПОПРОБУЙ ЕЩЁ РАЗ!');
+ raceActive=false;$('raceHud')?.classList.remove('active');
+ if(playerWon){
+  money+=1000000;
+  raceScooter.visible=true;
+  raceScooter.position.set(raceTrackX+3.5,0,car.position.z+8);
+  $('victoryCutscene')?.classList.add('active');
+  $('victoryTitle').textContent='ФИНИШ!';
+  $('victorySubtitle').textContent='ВОЛГА ВЫРВАЛА ПОБЕДУ У G2 MAX';
+  $('victoryReward').textContent='₴ 1 000 000';
+  victoryCutscene={elapsed:0,baseAngle:0};
+  notify('ПОБЕДА! +₴1 000 000 · G2 MAX ОСТАЛСЯ ПОЗАДИ!');
+  updateNeeds(0);
+  return;
+ }
+ raceScooter.visible=false;
+ notify('G2 MAX ПЕРВЫМ НА ФИНИШЕ. ПОПРОБУЙ ЕЩЁ РАЗ!');
  if(raceReturn){car.position.set(raceReturn.x,0,raceReturn.z);heading=raceReturn.heading;car.rotation.y=heading;}
  speed=0;gear=0;engineOn=false;ignitionOn=false;rpm=0;raceReturn=null;
  updateNeeds(0);
+}
+function updateVictoryCutscene(dt){
+ if(!victoryCutscene)return;
+ const cut=victoryCutscene;cut.elapsed+=dt;
+ const t=cut.elapsed;
+ const radius=THREE.MathUtils.lerp(11,6,Math.min(1,t/6));
+ const angle=t*1.65;
+ camera.position.set(car.position.x+Math.sin(angle)*radius,3.4+Math.sin(t*2.1)*.55,car.position.z+Math.cos(angle)*radius);
+ camera.lookAt(car.position.x,1.05,car.position.z);
+ const title=$('victoryTitle'),subtitle=$('victorySubtitle');
+ if(t>2.0&&t<4.15){
+  if(title&&title.textContent!=='САМOКАТ В ПЫЛИ'){title.textContent='САМОКАТ В ПЫЛИ';subtitle.textContent='ТВОЯ ВОЛГА — КОРОЛЬ ЭТОЙ ТРАССЫ';}
+ }else if(t>=4.15){
+  if(title&&title.textContent!=='МИЛЛИОН ТВОЙ!'){title.textContent='МИЛЛИОН ТВОЙ!';subtitle.textContent='G2 MAX БОЛЬШЕ НЕ ВЫЗЫВАЕТСЯ';}
+ }
+ if(t>=7.6){
+  victoryCutscene=null;
+  $('victoryCutscene')?.classList.remove('active');
+  raceScooter.visible=false;
+  if(raceReturn){car.position.set(raceReturn.x,0,raceReturn.z);heading=raceReturn.heading;car.rotation.y=heading;}
+  speed=0;gear=0;engineOn=false;ignitionOn=false;rpm=0;raceReturn=null;
+  camera.position.set(car.position.x+Math.sin(heading)*8.8,4,car.position.z+Math.cos(heading)*8.8);
+  camera.lookAt(car.position.x,1.05,car.position.z);
+  notify('НАГРАДА ПОЛУЧЕНА · +₴1 000 000');
+ }
 }
 function updateDrag(dt){
  if(!raceActive)return;
@@ -1224,6 +1263,7 @@ function animate(){
   if(window.__VOLGA_PHONE_BLOCKED__)return;
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.035);
+  if(victoryCutscene){updateVictoryCutscene(dt);renderer.render(scene,camera);return;}
   pollGamepad(dt);
   updateEngineRumble(dt);
   gameTime+=dt;
