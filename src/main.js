@@ -1197,26 +1197,34 @@ function pollGamepad(dt){
 }
 addEventListener('gamepadconnected',()=>{refreshGamepadChoices();notify('КОНТРОЛЛЕР ОБНАРУЖЕН · ВЫБЕРИ ЕГО В СПИСКЕ');});
 addEventListener('gamepaddisconnected',()=>{refreshGamepadChoices();});
-// Procedural engine audio. Browsers unlock sound after the first user gesture.
-let audioContext=null, engineOsc=null, engineHarmonic=null, engineFilter=null, engineGain=null;
-function startEngineAudio(){
-  if(audioContext)return;
+// Recorded GAZ-24 engine audio. Browsers unlock sound after the first user gesture.
+let audioContext=null, idleSource=null, revSource=null, idleGain=null, revGain=null;
+async function startEngineAudio(){
   const AudioCtx=window.AudioContext||window.webkitAudioContext;
   if(!AudioCtx)return;
-  audioContext=new AudioCtx();
-  engineOsc=audioContext.createOscillator();
-  engineHarmonic=audioContext.createOscillator();
-  engineFilter=audioContext.createBiquadFilter();
-  engineGain=audioContext.createGain();
-  const harmonicGain=audioContext.createGain();
-  engineOsc.type='sawtooth'; engineHarmonic.type='triangle';
-  engineFilter.type='lowpass'; engineFilter.frequency.value=230;
-  engineGain.gain.value=0;
-  harmonicGain.gain.value=.18;
-  engineOsc.connect(engineFilter);
-  engineHarmonic.connect(harmonicGain); harmonicGain.connect(engineFilter);
-  engineFilter.connect(engineGain); engineGain.connect(audioContext.destination);
-  engineOsc.start(); engineHarmonic.start();
+  if(!audioContext){
+    audioContext=new AudioCtx();
+    idleGain=audioContext.createGain(); revGain=audioContext.createGain();
+    idleGain.gain.value=0; revGain.gain.value=0;
+    idleGain.connect(audioContext.destination); revGain.connect(audioContext.destination);
+    try{
+      const response=await fetch('./assets/volga-engine-recording.mp3');
+      if(!response.ok)throw new Error('Не удалось загрузить звук Волги');
+      const decoded=await audioContext.decodeAudioData(await response.arrayBuffer());
+      const split=Math.min(decoded.length,Math.floor(decoded.sampleRate*2.1));
+      const makePart=(start,end)=>{
+        const part=audioContext.createBuffer(decoded.numberOfChannels,end-start,decoded.sampleRate);
+        for(let ch=0;ch<decoded.numberOfChannels;ch++)part.copyToChannel(decoded.getChannelData(ch).slice(start,end),ch);
+        return part;
+      };
+      const idleBuffer=makePart(0,split), revBuffer=makePart(split,decoded.length);
+      idleSource=audioContext.createBufferSource(); idleSource.buffer=idleBuffer; idleSource.loop=true;
+      revSource=audioContext.createBufferSource(); revSource.buffer=revBuffer; revSource.loop=true;
+      idleSource.connect(idleGain); revSource.connect(revGain);
+      idleSource.start(); revSource.start();
+    }catch(error){console.warn('Volga engine audio:',error);}
+  }
+  if(audioContext.state==='suspended')await audioContext.resume();
 }
 addEventListener('pointerdown',startEngineAudio,{once:true});
 addEventListener('keydown',startEngineAudio,{once:true});
@@ -1373,12 +1381,11 @@ function animate(){
     rpmEl.textContent=String(Math.round(rpm/10)*10);rpmBar.style.width=Math.min(rpm/6000*100,100)+'%';setNeedle(rpmNeedle,rpm/1000,6);
     const shownGear=gear===-1?'R':gear===0?'N':String(gear);
     gearEl.textContent=shownGear;gearNameEl.textContent=shownGear==='R'?'ЗАДНИЙ ХОД':shownGear==='N'?'НЕЙТРАЛЬ':['','ПЕРВАЯ','ВТОРАЯ','ТРЕТЬЯ','ЧЕТВЁРТАЯ'][gear];
-    if(audioContext&&engineOsc){
-      const base=engineOn?Math.max(18,rpm/30):(keys.has('KeyE')?55:18);
-      engineOsc.frequency.setTargetAtTime(base,audioContext.currentTime,.08);
-      engineHarmonic.frequency.setTargetAtTime(base*2.02,audioContext.currentTime,.08);
-      engineFilter.frequency.setTargetAtTime(engineOn?170+rpm*.075:90,audioContext.currentTime,.12);
-      engineGain.gain.setTargetAtTime(engineOn?(throttle?.075:.038):(keys.has('KeyE')?.012:.0001),audioContext.currentTime,.16);
+    if(audioContext&&idleGain&&revGain&&idleSource&&revSource){
+      const revLevel=THREE.MathUtils.clamp((rpm-950)/2100,0,1);
+      idleGain.gain.setTargetAtTime(engineOn?.115*(1-revLevel*.72):0,audioContext.currentTime,.12);
+      revGain.gain.setTargetAtTime(engineOn?(throttle?.24:.12)*revLevel:0,audioContext.currentTime,.16);
+      revSource.playbackRate.setTargetAtTime(THREE.MathUtils.clamp(rpm/2300,.72,1.55),audioContext.currentTime,.12);
     }
     const nearStation=inStation(car.position.x,car.position.z);
     updatePrompt((nearStation?(engineOn?'АЗС: I — заглушить, затем R — заправить бак и канистры':'АЗС: R — заправить бак и обе канистры'):(engineOn?'W — газ · S — тормоз · A/D — руль · C — сцепление · Shift/Ctrl — передачи · H — капот · O — багажник · E — выйти':'K — зажигание · Z — подсос · удерживай E — стартер · W — подгазовать'))+' · '+(ignitionOn?'ЗАЖИГАНИЕ ВКЛ':'ЗАЖИГАНИЕ ВЫКЛ')+' · '+('ПОДСОС '+Math.round(chokeAmount*100)+'%')+' · БАК '+fuelLiters.toFixed(1)+'/55 л · КАНИСТРЫ '+fullCanLiters.toFixed(1)+'+'+emptyCanLiters.toFixed(1)+' л');
